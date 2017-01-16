@@ -28,7 +28,10 @@ void* subtracktMillion(){
 int main(){
     	pthread_t thread_1;
     	pthread_t thread_2; 
-        
+       	if (pthread_mutex_init(&lock, NULL) != 0){
+		printf("\n mutex init failed\n");
+		return 1;
+	} 
      	pthread_create(&thread_1, NULL, addMillion, NULL);
     	// Arguments to a thread would be passed here ---------^
      	pthread_create(&thread_2, NULL, subtracktMillion, NULL);
@@ -38,7 +41,7 @@ int main(){
     	pthread_join(thread_1, NULL);
         pthread_join(thread_2, NULL);
     	printf("%d\n", i);
-          pthread_mutex_destroy(&lock);
+	pthread_mutex_destroy(&lock);
 
     	return 0;
     
