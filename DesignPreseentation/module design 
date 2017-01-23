@@ -1,0 +1,41 @@
+Modules: 
+
+Master
+	- makeBackup
+	- HandleMsg
+		"i'm alive" or the absense of an I'm alive
+		orderCompleteMsg
+	- sendOrder
+	- 
+
+Slave
+	- handleMsg
+		A slave is only supposed to receive orders. The message is translated into an order and added to the "to do"-list
+	- internalFunctionality
+		Check if an internal light is on
+	- sendMsg
+		Tell master that an order is complete
+		Tell master "I'm alice"
+
+Network/communication (we will use the module that is provided for us)
+	- cast
+	- conn
+	- localip
+	- peers
+
+Orders
+	- addOrder
+		Takes a new order and adds it to a list
+	- removeOrder
+		Takes an order that is completed and removes it from the list
+	- duplicateOrder
+		Checks if two orders are identical. Does not add a duplicate if this is the case
+	- prioritizeOrder
+		given the current state of an elevator, compares two orders to see which one should be executed first. 
+
+Delegation
+	- FindSuitableElevator
+		compares the cost of all of the elevators to figure out which one of them should take the order
+	- calculateCost
+		given the current state of an elevator it calculates the cost if the elevator was to take a new order
+
