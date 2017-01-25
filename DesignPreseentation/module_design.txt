@@ -6,7 +6,8 @@ Master
 		"i'm alive" or the absense of an I'm alive
 		orderCompleteMsg
 	- sendOrder
-	- 
+	- NoAnswerDiagnostics
+	- deployElevatorBackup
 
 Slave
 	- handleMsg
@@ -14,9 +15,11 @@ Slave
 	- internalFunctionality
 		Check if an internal light is on
 	- sendMsg
-		Tell master that an order is complete
-		Tell master "I'm alice"
-
+		Options:
+			-Tell master that an order is complete
+			-Tell master "I'm alice"
+		wait for callback, try 3 times and return result
+//No idea how this works
 Network/communication (we will use the module that is provided for us)
 	- cast
 	- conn
@@ -25,13 +28,16 @@ Network/communication (we will use the module that is provided for us)
 
 Orders
 	- addOrder
-		Takes a new order and adds it to a list
+		Takes a new order and adds it to a list of orders
 	- removeOrder
 		Takes an order that is completed and removes it from the list
 	- duplicateOrder
-		Checks if two orders are identical. Does not add a duplicate if this is the case
+		Checks if two orders are identical in a list. Does not add a duplicate if this is the case
 	- prioritizeOrder
-		given the current state of an elevator, compares two orders to see which one should be executed first. 
+		alt1
+			given the current state of an elevator, compares two orders to see which one should be executed first. 
+		alt2
+			Given current state of elevator, rearranges the order stack to optimize the operation
 
 Delegation
 	- FindSuitableElevator
@@ -42,3 +48,5 @@ Delegation
 //TODO
 Elevator control
 	- Wrappers for the included drivers
+	- Abstraction of control to be able to work on orders
+
