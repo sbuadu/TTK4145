@@ -1,11 +1,13 @@
 package main
 import(
+	"../network/network/bcast"
 	"fmt"
 	//"time"
-	"log"
-	"net"
-	"strconv"
-	 //"os/exec"
+	//"log"
+	//"net"
+	//"strconv"
+	//"os/exec"
+	//"../conn"
 )
 
 type Counter struct{
@@ -13,43 +15,42 @@ type Counter struct{
 }
 
 type Message struct{
-	Data string
+	Data int
 }
 
-
-func Receiver(fromMaster chan Message){
-for{
-buf := make([]byte, 1024)
-	
-	server, _ := net.ResolveUDPAddr("udp",":20099")
-conn, err := net.ListenUDP("udp", server)
-if err != nil {
-	log.Fatal(err)
-}
-
-	n, _, _ := conn.ReadFromUDP(buf)
-	fromMaster <- Message{string(buf[:n])}
-	
-	conn.Close()
+/*
+func Receiver(port int, fromMaster chan Message){
+	buf := make([]byte, 1024)
+	server, err := net.ResolveUDPAddr("udp",fmt.Sprintf(":%d",port))
+	//con := conn.DialBroadcastUDP(port)
+	if err != nil {
+		fmt.Println(err)
 	}
+	con, err1 := net.ListenUDP("udp",server)
+	fmt.Println(err1)
+	for {
+		n, _, err2 := con.ReadFromUDP(buf)
+		fmt.Println(err2)
+		fromMaster <- Message{string(buf[:n])}
+	}
+	defer con.Close()
  }
-
+*/
 
 func main(){
 
-fmt.Print("\n\n The backup is running \n\n")
-fromMaster := make(chan Message)
-go Receiver(fromMaster)
+	port := 20009
+	fmt.Print("\n\nThe backup is running \n\n")
+	fromMaster := make(chan Message)
+	go bcast.Receiver(port, fromMaster)
+	masterCounter := Counter{0}
 
-msg := <- fromMaster
-var masterCounter Counter
+	for {
+		msg := <-fromMaster
+		masterCounter.State = msg.Data
 
+		fmt.Printf("the received state is %d\n", masterCounter.State)
 
-
-masterCounter.State, _ = strconv.Atoi(msg.Data) 
-
-fmt.Print("the received state is %d\n", masterCounter.State)
-
-
+	}
 
 }

@@ -2,12 +2,12 @@ package main
 
 import (
 	"fmt"
-	"net"
-	"log"
+	//"net"
+	//"log"
 	"os/exec"
-	"strconv"
+	//"strconv"
 	"time"
-
+	"../network/network/bcast"
 )
 
 
@@ -17,57 +17,54 @@ type Counter struct{
 }
 
 type Message struct{
-	Data string
+	Data int
 }
-
-func Transmitter(toBackup chan Message){
-//	conn := net.DialBroadcastUDP("20009")
-	addr,err := net.ResolveUDPAddr("udp4", ":20099")
-if err != nil {
-	log.Fatal(err)
-}
-
-conn, err := net.ListenUDP("udp", addr)
-	if err != nil{
-	log.Fatal(err)
+/*
+func Transmitter(port int,toBackup chan Message){
+	conn := conn.DialBroadcastUDP(port)
+	addr,err := net.ResolveUDPAddr("udp", fmt.Sprintf(":%d", port))
+	if err != nil {
+		log.Fatal(err)
 	}
 
 	for {
-		state := <- toBackup
-		_, err := conn.WriteToUDP([]byte(state.Data), addr)
-if err != nil {
-	log.Fatal(err)
-}
+		state := <-toBackup
+		_ , err = conn.WriteTo([]byte(state.Data), addr)
+		if err != nil {
+			log.Fatal(err)
+		}
+
+	}
+	defer conn.Close()
 
 }
-
-}
-
+*/
 
 func main(){
 
-	fmt.Print("Let's count!\n\n ")
+	fmt.Print("Let's count!\n\n")
 	counter := Counter{0}
 
-spawnBackup := exec.Command("gnome-terminal", "-x", "sh", "-c", "go run backup.go")
+	spawnBackup := exec.Command("gnome-terminal", "-x", "sh", "-c", "go run backup.go")
 
-//exec.Command("gnome-terminal", "-x", "go run ~/Documents/TTK4145/Exercise6/backup.go")
-spawnBackup.Start()
-
-
-toBackup := make(chan Message)
-go Transmitter(toBackup)
+	//exec.Command("gnome-terminal", "-x", "go run ~/Documents/TTK4145/Exercise6/backup.go")
+	spawnBackup.Start()
 
 
-for{
+	toBackup := make(chan Message, 1)
+	port := 20009
+	go bcast.Transmitter(port,toBackup)
 
-fmt.Printf("Current state: %d \n", counter.State)
 
-toBackup <- Message{strconv.Itoa(counter.State)}
-counter.State++ 
-time.Sleep(1*time.Second)
+	for {
 
-}
+		fmt.Printf("Current state: %d \n", counter.State)
+		msg := Message{counter.State}
+		toBackup <- msg
+		counter.State++
+		time.Sleep(1*time.Second)
+
+	}
 
 
 }
