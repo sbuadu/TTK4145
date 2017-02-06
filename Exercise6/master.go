@@ -19,26 +19,7 @@ type Counter struct{
 type Message struct{
 	Data int
 }
-/*
-func Transmitter(port int,toBackup chan Message){
-	conn := conn.DialBroadcastUDP(port)
-	addr,err := net.ResolveUDPAddr("udp", fmt.Sprintf(":%d", port))
-	if err != nil {
-		log.Fatal(err)
-	}
 
-	for {
-		state := <-toBackup
-		_ , err = conn.WriteTo([]byte(state.Data), addr)
-		if err != nil {
-			log.Fatal(err)
-		}
-
-	}
-	defer conn.Close()
-
-}
-*/
 
 func main(){
 
@@ -65,6 +46,7 @@ func main(){
 		time.Sleep(1*time.Second)
 
 	}
+
 
 
 }

@@ -2,11 +2,11 @@ package main
 import(
 	"../network/network/bcast"
 	"fmt"
-	//"time"
+	"time"
 	//"log"
 	//"net"
 	//"strconv"
-	//"os/exec"
+	"os/exec"
 	//"../conn"
 )
 
@@ -18,39 +18,62 @@ type Message struct{
 	Data int
 }
 
-/*
-func Receiver(port int, fromMaster chan Message){
-	buf := make([]byte, 1024)
-	server, err := net.ResolveUDPAddr("udp",fmt.Sprintf(":%d",port))
-	//con := conn.DialBroadcastUDP(port)
-	if err != nil {
-		fmt.Println(err)
-	}
-	con, err1 := net.ListenUDP("udp",server)
-	fmt.Println(err1)
-	for {
-		n, _, err2 := con.ReadFromUDP(buf)
-		fmt.Println(err2)
-		fromMaster <- Message{string(buf[:n])}
-	}
-	defer con.Close()
- }
-*/
 
+ func takeOverAsMaster(counter Counter){
+ 	toBackup := make(chan Message, 1)
+
+ 	//staring a new backup 
+	spawnBackup := exec.Command("gnome-terminal", "-x", "sh", "-c", "go run backup.go")
+	spawnBackup.Start()
+
+	
+	port := 20009
+	go bcast.Transmitter(port,toBackup)
+
+
+	for {
+
+		fmt.Printf("Current state: %d \n", counter.State)
+		msg := Message{counter.State}
+		toBackup <- msg
+		counter.State++
+		time.Sleep(1*time.Second)
+
+	}
+}
+
+
+var isBackup bool = true
 func main(){
 
+	
+	tmr := time.NewTimer(5*time.Second)
 	port := 20009
 	fmt.Print("\n\nThe backup is running \n\n")
 	fromMaster := make(chan Message)
-	go bcast.Receiver(port, fromMaster)
+	
 	masterCounter := Counter{0}
 
-	for {
+	go bcast.Receiver(port, fromMaster)
+	
+
+	// if the timer runs out...
+	go func(){
+		<- tmr.C
+		isBackup = false
+		fmt.Print("Master seems to be dead, I'm taking over.. ")
+
+				takeOverAsMaster(masterCounter)
+	}()
+for {
+ 	// receiving the current state of the master and printing it 
+	if isBackup {
 		msg := <-fromMaster
 		masterCounter.State = msg.Data
-
+		tmr.Reset(5*time.Second)
 		fmt.Printf("the received state is %d\n", masterCounter.State)
 
-	}
+	} 
 
+}
 }
