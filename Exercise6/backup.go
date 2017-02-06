@@ -47,7 +47,7 @@ var isBackup bool = true
 func main(){
 
 	
-	tmr := time.NewTimer(5*time.Second)
+	tmr := time.NewTimer(3*time.Second)
 	port := 20009
 	fmt.Print("\n\nThe backup is running \n\n")
 	fromMaster := make(chan Message)
@@ -65,13 +65,13 @@ func main(){
 
 				takeOverAsMaster(masterCounter)
 	}()
-for {
- 	// receiving the current state of the master and printing it 
-	if isBackup {
-		msg := <-fromMaster
-		masterCounter.State = msg.Data
-		tmr.Reset(5*time.Second)
-		fmt.Printf("the received state is %d\n", masterCounter.State)
+	for {
+	 	// receiving the current state of the master and printing it 
+		if isBackup {
+			msg := <-fromMaster
+			masterCounter.State = msg.Data
+			tmr.Reset(3*time.Second)
+			fmt.Printf("the received state is %d\n", masterCounter.State)
 
 	} 
 
