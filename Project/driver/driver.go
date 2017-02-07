@@ -2,10 +2,11 @@ package driver
 
 import (
 
-"io"
-"channels"
-"math"
-"fmt"
+	"io"
+	"channels"
+	"math"
+	"fmt"
+	"iota"
 )
 
 
@@ -13,7 +14,7 @@ const(
 N_FLOORS = 4
 N_BUTTONS = 3
 
-BUTTON_CALL_UP = 0 
+BUTTON_CALL_UP = 0
 BUTTON CALL_DOWN = 1
 BUTTON_COMMAND = 2
 
@@ -36,10 +37,11 @@ var	button_channel_matrix = [2][3]int{
 
 
 const motorSpeed int = 2800
-type Direction struct{
-	Up int = 1
-	Down int = -1
-	Stop int = 0
+type Direction int
+const {
+	Up = iota
+	Down
+	Stop
 
 }
 
@@ -58,11 +60,11 @@ func ListenForButtons() {}
 func getCurrentFloor() int {
 	if io.ioReadBit(channel.SENSOR_FLOOR1)==1 {
 		return 0
-	} else if io.ioReadBit(channel.SENSOR_FLOOR1)==1 {
+	} else if io.ioReadBit(channel.SENSOR_FLOOR2)==1 {
 		return 1
-	} else if io.ioReadBit(channel.SENSOR_FLOOR1)==1 {
+	} else if io.ioReadBit(channel.SENSOR_FLOOR3)==1 {
 		return 2
-	} else if io.ioReadBit(channel.SENSOR_FLOOR1)==1 {
+	} else if io.ioReadBit(channel.SENSOR_FLOOR4)==1 {
 		return 3
 	} else {
 		return -1
@@ -96,15 +98,14 @@ func setDoorLamp() {}
 
 func setFloorIndicator(floor int) {}
 func steerElevator(dir Direction) {
-	if dir==Up {
+	switch dir {
+	case Stop:
 		io.ioWriteAnalog(channels.MOTOR, 0)
-	}
-	else if dir > 0 {
+	case Up:
 		io.ioClearBit(channels.MOTORDIR)
 		ioWriteAnalog(channels.MOTOR,motorSpeed)
-	}
-	else if dir < 0{
+
+	case Down:
 		io.ioSetBit(channels.MOTORDIR)
 		ioWriteAnalog(channels.MOTOR,motorSpeed)
-	}
 }
