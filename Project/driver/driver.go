@@ -90,7 +90,14 @@ if value {
 
 
 
-func setDoorLamp() {}
+func setDoorLamp(value int) {
+	if value {
+		io.ioSetBit(LIGHT_DOOR_OPEN)
+	}else{
+		io.ioClearBit(LIGHT_DOOR_OPEN)
+	}
+
+}
 
 // up, down or stop
 
