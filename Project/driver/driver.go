@@ -17,6 +17,7 @@ BUTTON_CALL_UP = 0
 BUTTON CALL_DOWN = 1
 BUTTON_COMMAND = 2
 
+MOTOR_SPEED = 2800
 )
 
 
@@ -35,7 +36,7 @@ var	button_channel_matrix = [2][3]int{
 
 
 
-const motorSpeed int = 2800
+
 type Direction struct{
 	Up int = 1
 	Down int = -1
@@ -72,15 +73,13 @@ func getCurrentFloor() int {
 func setButtonLamp(button int, floor int , value int) {
 //must check that the button number and floor is valid..
 //must find a way to handle this type of error 
-
+//is this written to a log? 
 
 if value {
 	io.ioSetBit(lamp_channel_matrix[floor][button])
 }else{
 	io.ioClearBit(lamp_channel_matrix[floor][button])
 }
-
-
 
 
 }
