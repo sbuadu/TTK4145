@@ -2,23 +2,23 @@ package driver
 
 import (
 
-	"io"
-	"channels"
-	"math"
-	"fmt"
-	"iota"
+"io"
+"channels"
+"math"
+"fmt"
+"iota"
 )
 
 
 const(
-N_FLOORS = 4
-N_BUTTONS = 3
+	N_FLOORS = 4
+	N_BUTTONS = 3
 
-BUTTON_CALL_UP = 0
-BUTTON CALL_DOWN = 1
-BUTTON_COMMAND = 2
+	BUTTON_CALL_UP = 0
+	BUTTON CALL_DOWN = 1
+	BUTTON_COMMAND = 2
 
-MOTOR_SPEED = 2800
+	MOTOR_SPEED = 2800
 )
 
 
@@ -37,7 +37,9 @@ const	lamp_channel_matrix = [4][3]int{
 	{LIGHT_UP4, LIGHT_DOWN4, LIGHT_COMMAND4},
 }
 
-const	button_channel_matrix = [2][3]int{
+const	button_channel_matrix = [4][3]int{
+	{BUTTON_UP1, BUTTON_DOWN1, BUTTON_COMMAND1},
+	{BUTTON_UP2, BUTTON_DOWN2, BUTTON_COMMAND2},
 	{BUTTON_UP3, BUTTON_DOWN3, BUTTON_COMMAND3},
 	{BUTTON_UP4, BUTTON_DOWN4, BUTTON_COMMAND4},
 
@@ -56,7 +58,16 @@ func initElevator() {
 
 }
 
-func ListenForButtons() {}
+func ListenForButtons() (pushedBtnMatrix[4][3]int) {
+	for i := 0; i < N_FLOORS; i++ {
+		for j := 0; j < N_BUTTONS; j++ {
+			pushedBtnMatrix[i][j] = io.ioReadBit(button_channel_matrix[i][j])
+		}
+	}
+	//returns pushedBtnMatrix
+	return 
+
+}
 
 func getCurrentFloor() int {
 	if io.ioReadBit(channel.SENSOR_FLOOR1)==1 {
@@ -77,16 +88,25 @@ func setButtonLamp(button int, floor int , value int) {
 //must find a way to handle this type of error 
 //is this written to a log? 
 
-if value {
-	io.ioSetBit(lamp_channel_matrix[floor][button])
-}else{
-	io.ioClearBit(lamp_channel_matrix[floor][button])
+	if value {
+		io.ioSetBit(lamp_channel_matrix[floor][button])
+	}else{
+		io.ioClearBit(lamp_channel_matrix[floor][button])
+	}
+	
+	
 }
 
 
+func setDoorLamp(value int) {
+	if value {
+		io.ioSetBit(LIGHT_DOOR_OPEN)
+	}else{
+		io.ioClearBit(LIGHT_DOOR_OPEN)
+	}
+
 }
 
-func setDoorLamp() {}
 
 func setFloorIndicator(floor int) {
 	if floor < 0 || floor >= NFLOORS {
@@ -109,4 +129,4 @@ func steerElevator(dir Direction) {
 	case Down:
 		io.ioSetBit(channels.MOTORDIR)
 		ioWriteAnalog(channels.MOTOR,motorSpeed)
-}
+	}
