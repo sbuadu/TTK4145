@@ -86,16 +86,18 @@ if value {
 
 }
 
-
-
-
-
 func setDoorLamp() {}
 
-// up, down or stop
+func setFloorIndicator(floor int) {
+	if floor < 0 || floor >= NFLOORS {
+		panic("Floor not existing")
+	}
+	if floor == 0 {
+		io.ioClearBit(channel.LIGHT_FLOOR_IND1)
+		io.ioClearBit(channel.LIGHT_FLOOR_IND2)
+	}
+}
 
-
-func setFloorIndicator(floor int) {}
 func steerElevator(dir Direction) {
 	switch dir {
 	case Stop:
