@@ -26,6 +26,6 @@ func ioReadAnalog(channel int) int {
 	return int(C.io_read_analog(C.int(channel)))
 }
 
-func ioWriteAnalog(channel int, int value) {
+func ioWriteAnalog(channel int, value int) {
 	C.io_write_analog(C.int(channel), C.int(value))
 }
