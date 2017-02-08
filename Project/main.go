@@ -36,6 +36,5 @@ func main() {
 	for k := 0; k < 4; k++ {
 		driver.SetFloorIndicator(k)
 	}
-	
 	defer fmt.Println("All testing done")
 }

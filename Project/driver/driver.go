@@ -24,7 +24,7 @@ const(
 
 type Direction int
 const (
-	Up = iota
+	Up Direction = iota
 	Down
 	Stop
 )
