@@ -24,7 +24,7 @@ const(
 
 type Direction int
 const (
-	Up = Direction(iota)
+	Up = iota
 	Down
 	Stop
 )
@@ -48,13 +48,13 @@ var	button_channel_matrix = [4][3]int{
 
 
 
-func initElevator() {
+func InitElevator() {
 	initSuccess := ioInit()
 	if initSuccess == 0{
-		fmt.Println("Could not initialize hardware")
+		panic("Could not initialize hardware")
 	}
-	setFloorIndicator(0)
-	setDoorLamp(0)
+	SetFloorIndicator(0)
+	SetDoorLamp(0)
 
 }
 
@@ -69,7 +69,7 @@ func ListenForButtons() [4][3]int {
 
 }
 
-func getCurrentFloor() int {
+func GetCurrentFloor() int {
 	if ioReadBit(SENSOR_FLOOR1)==1 {
 		return 0
 	} else if ioReadBit(SENSOR_FLOOR2)==1 {
@@ -83,11 +83,12 @@ func getCurrentFloor() int {
 	}
 }
 
-func setButtonLamp(button int, floor int , value int) {
+func SetButtonLamp(button int, floor int , value int) {
 //must check that the button number and floor is valid..
 //must find a way to handle this type of error 
 //is this written to a log? 
 
+//Check and panic if the button or floor is incorrent
 	if value == 1 {
 		ioSetBit(lamp_channel_matrix[floor][button])
 	}else{
@@ -96,7 +97,7 @@ func setButtonLamp(button int, floor int , value int) {
 }
 
 
-func setDoorLamp(value int) {
+func SetDoorLamp(value int) {
 	if value == 1 {
 		ioSetBit(LIGHT_DOOR_OPEN)
 	}else{
@@ -106,7 +107,7 @@ func setDoorLamp(value int) {
 }
 
 
-func setFloorIndicator(floor int) {
+func SetFloorIndicator(floor int) {
 	if floor < 0 || floor >= N_FLOORS {
 		panic("Floor not existing")
 	} else if floor == 0 {
@@ -124,16 +125,18 @@ func setFloorIndicator(floor int) {
 	}
 }
 
-func steerElevator(dir Direction) {
+func SteerElevator(dir Direction) {
 	switch dir {
 	case Stop:
 		ioWriteAnalog(MOTOR, 0)
+		fmt.Println("Stopping elevator")
 	case Up:
 		ioClearBit(MOTORDIR)
 		ioWriteAnalog(MOTOR,MOTOR_SPEED)
-
+		fmt.Println("Going up")
 	case Down:
 		ioSetBit(MOTORDIR)
 		ioWriteAnalog(MOTOR,MOTOR_SPEED)
+		fmt.Println("Going down")
 	}
 }
