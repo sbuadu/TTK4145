@@ -16,14 +16,25 @@ const (
 func main() {
 	fmt.Println("Initializing elevator")
 	driver.InitElevator()
+
+	/* testing that we are able to steer the elevator and return current floor
 	driver.SteerElevator(driver.Direction(0))
-	time.Sleep(3*time.Second)
-	//driver.SteerElevator(1)
-	time.Sleep(2*time.Second)
+	time.Sleep(4*time.Second)
+	driver.SteerElevator(driver.Direction(1))
+	time.Sleep(4*time.Second)
 	driver.SteerElevator(2)
 	time.Sleep(1*time.Second)
 	fmt.Println(driver.GetCurrentFloor())
-/*
+*/
+
+for{
+	fmt.Println(driver.ListenForButtons())
+time.Sleep(2*time.Millisecond)
+}
+
+
+
+/* Testing that the lights work as they should
 	for i:=0; i < 4; i++{
 		for j := 0; j < 3; j++ {
 			fmt.Printf("Button lamp floor %d lamp %d\n",i,j)
