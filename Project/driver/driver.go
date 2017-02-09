@@ -88,7 +88,7 @@ func SetButtonLamp(button int, floor int , value int) {
 		panic("Floor or button command out of range")
 	} else if value == 1 {
 		ioSetBit(lamp_channel_matrix[floor][button])
-	} else if{
+	} else {
 		ioClearBit(lamp_channel_matrix[floor][button])
 	}
 }
