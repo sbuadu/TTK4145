@@ -62,6 +62,7 @@ func ListenForButtons() [4][3]int {
 	for i := 0; i < N_FLOORS; i++ {
 		for j := 0; j < N_BUTTONS; j++ {
 			pushedBtnMatrix[i][j] = ioReadBit(button_channel_matrix[i][j])
+			
 		}
 	}
 	return pushedBtnMatrix
@@ -82,7 +83,7 @@ func GetCurrentFloor() int {
 	}
 }
 
-func SetButtonLamp(button int, floor int , value int) {
+func SetButtonLamp(floor int, button int , value int) {
 
 	if floor < 0 || floor >= N_FLOORS || button < 0 || button >= N_BUTTONS{
 		panic("Floor or button command out of range")
