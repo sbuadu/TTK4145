@@ -17,7 +17,7 @@ func main() {
 	fmt.Println("Initializing elevator")
 	driver.InitElevator()
 
-	/* testing that we are able to steer the elevator and return current floor
+//testing that we are able to steer the elevator and return current floor
 	driver.SteerElevator(driver.Direction(0))
 	time.Sleep(4*time.Second)
 	driver.SteerElevator(driver.Direction(1))
@@ -25,13 +25,14 @@ func main() {
 	driver.SteerElevator(2)
 	time.Sleep(1*time.Second)
 	fmt.Println(driver.GetCurrentFloor())
-*/
 
+
+/*testing the btn signals
 for{
 	fmt.Println(driver.ListenForButtons())
 time.Sleep(2*time.Millisecond)
 }
-
+*/
 
 
 /* Testing that the lights work as they should
@@ -53,6 +54,20 @@ time.Sleep(2*time.Millisecond)
 		time.Sleep(1*time.Second)
 	}
 */
+
+/*	
+driver.SteerElevator(driver.Direction(0))
+
+for {
+
+
+if( driver.GetCurrentFloor() == 1){
+driver.SteerElevator(driver.Direction(2))
+return
+}
+
+}*/
+time.Sleep(1*time.Second)
 	driver.SetFloorIndicator(0)
 	defer fmt.Println("All testing done")
 }
