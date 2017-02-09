@@ -5,7 +5,7 @@ import (
 	//"io"
 	//"channels"
 	//"math"
-	"fmt"
+"fmt"
 	//"iota"
 )
 
@@ -47,7 +47,6 @@ var	button_channel_matrix = [4][3]int{
 
 
 
-
 func InitElevator() {
 	initSuccess := ioInit()
 	if initSuccess == 0{
@@ -83,15 +82,13 @@ func GetCurrentFloor() int {
 	}
 }
 
-func SetButtonLamp(floor int,button int , value int) {
-//must check that the button number and floor is valid..
-//must find a way to handle this type of error 
-//is this written to a log? 
+func SetButtonLamp(button int, floor int , value int) {
 
-//Check and panic if the button or floor is incorrent
-	if value == 1 {
+	if floor < 0 || floor >= N_FLOORS || button < 0 || button >= N_BUTTONS{
+		panic("Floor or button command out of range")
+	} else if value == 1 {
 		ioSetBit(lamp_channel_matrix[floor][button])
-	}else{
+	} else if{
 		ioClearBit(lamp_channel_matrix[floor][button])
 	}
 }
