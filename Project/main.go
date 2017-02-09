@@ -4,6 +4,7 @@ import (
 	"./driver"
 	"fmt"
 	"time"
+	"./slave"
 )
 
 type Direction int
@@ -14,10 +15,10 @@ const (
 )
 
 func main() {
-	fmt.Println("Initializing elevator")
-	driver.InitElevator()
+	fmt.Println("Initializing Slave")
 
 //testing that we are able to steer the elevator and return current floor
+/*
 	driver.SteerElevator(driver.Direction(0))
 	time.Sleep(4*time.Second)
 	driver.SteerElevator(driver.Direction(1))
@@ -26,7 +27,7 @@ func main() {
 	time.Sleep(1*time.Second)
 	fmt.Println(driver.GetCurrentFloor())
 
-
+*/
 /*testing the btn signals
 for{
 	fmt.Println(driver.ListenForButtons())
@@ -67,7 +68,9 @@ return
 }
 
 }*/
-time.Sleep(1*time.Second)
-	driver.SetFloorIndicator(0)
-	defer fmt.Println("All testing done")
+for {
+	go Slave()
+}
+defer fmt.Println("All testing done")
+}
 }
