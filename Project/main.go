@@ -17,16 +17,19 @@ func main() {
 	fmt.Println("Initializing elevator")
 	driver.InitElevator()
 	driver.SteerElevator(driver.Direction(0))
-	time.Sleep(1500*time.Millisecond)
-	driver.SteerElevator(1)
-	time.Sleep(1*time.Second)
+	time.Sleep(3*time.Second)
+	//driver.SteerElevator(1)
+	time.Sleep(2*time.Second)
 	driver.SteerElevator(2)
 	time.Sleep(1*time.Second)
 	fmt.Println(driver.GetCurrentFloor())
+/*
 	for i:=0; i < 4; i++{
 		for j := 0; j < 3; j++ {
+			fmt.Printf("Button lamp floor %d lamp %d\n",i,j)
+			//fmt.Println(driver.lamp_channel_matrix[i][j])
 			driver.SetButtonLamp(i,j,1)
-			time.Sleep(500*time.Millisecond)
+			time.Sleep(1000*time.Millisecond)
 			driver.SetButtonLamp(i,j,0)
 		}
 	}
@@ -35,6 +38,10 @@ func main() {
 	driver.SetDoorLamp(0)
 	for k := 0; k < 4; k++ {
 		driver.SetFloorIndicator(k)
+		fmt.Printf("Light on floor %d\n", k+1)
+		time.Sleep(1*time.Second)
 	}
+*/
+	driver.SetFloorIndicator(0)
 	defer fmt.Println("All testing done")
 }

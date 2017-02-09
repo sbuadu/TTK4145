@@ -51,7 +51,7 @@ var	button_channel_matrix = [4][3]int{
 func InitElevator() {
 	initSuccess := ioInit()
 	if initSuccess == 0{
-		panic("Could not initialize hardware")
+		fmt.Println("Could not initialize hardware")
 	}
 	SetFloorIndicator(0)
 	SetDoorLamp(0)
@@ -83,7 +83,7 @@ func GetCurrentFloor() int {
 	}
 }
 
-func SetButtonLamp(button int, floor int , value int) {
+func SetButtonLamp(floor int,button int , value int) {
 //must check that the button number and floor is valid..
 //must find a way to handle this type of error 
 //is this written to a log? 
