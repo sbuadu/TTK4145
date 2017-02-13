@@ -1,9 +1,9 @@
 package main
 
 import (
-	"./driver"
+	//"./driver"
 	"fmt"
-	"time"
+	//"time"
 	"./slave"
 )
 
@@ -16,6 +16,7 @@ const (
 
 func main() {
 	fmt.Println("Initializing Slave")
+	go slave.Slave()
 
 //testing that we are able to steer the elevator and return current floor
 /*
@@ -71,9 +72,4 @@ return
 }
 
 }*/
-for {
-	go Slave()
-}
-defer fmt.Println("All testing done")
-}
 }

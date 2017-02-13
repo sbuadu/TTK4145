@@ -4,32 +4,22 @@ import(
 	"time"
 	"../orderManagement"
 	"../driver"
-	"../network/network/localip"
+	"../network/localip"
 )
-type Elevator struct {
-	ID int
-	IP string
-}
 
-type Order struct {
-	elevator Elevator
-	fromButton Button
-	atTime time.Time
-}
+//TODO: make process pair functionality
 
-type Button struct{
-	floor int
-	button int
-}
+
 func SendMessage() {
-
+	//TODO:
 }
 
 func ListenRemoteOrders() {
-	
+	//TODO: Listen for new orders and add them to the orders
 }
 
-func ListenLocalOrders(orders chan Order) {
+func ListenLocalOrders(orders chan orderManagement.Order) {
+	//TODO: check if button is already on
 	var buttons [4][3]int
 	for {
 		recent := buttons
@@ -37,13 +27,18 @@ func ListenLocalOrders(orders chan Order) {
 		changed,floor,button := compareMatrix(buttons,recent)
 
 		if changed {
-			IP,_ := localip.Localip()
-			orderManagement.AddOrder(orders,Button{floor,button},Elevator{1,IP},time.Now())
+			IP,_ := localip.LocalIP()
+			success := orderManagement.AddOrder(orders, floor, button, orderManagement.Elevator{1,IP},time.Now())
+			if success == 1 {
+				driver.SetButtonLamp(floor, button, 1)
+			}
 		}
-	}	
+		time.Sleep(10*time.Millisecond)
+	}
 }
 
 func CompleteOrder() {
+	//TODO: pick first order in list and perform
 }
 
 func compareMatrix(new, old [4][3]int) (changed bool, floor, button int) {
@@ -58,13 +53,13 @@ func compareMatrix(new, old [4][3]int) (changed bool, floor, button int) {
 	}
 	return changed, floor, button
 }
-
-func main() {
+var orders = make([]orderManagement.Order,0)
+func Slave() {
 	driver.InitElevator()
 	orderChan := make(chan orderManagement.Order)
-	orders := make([]Order,0)
 	go ListenLocalOrders(orderChan)
+	go CompleteOrder()
 	for {
-		orders = append(orders,<-orderChan)	
+		orders = append(orders,<-orderChan)
 	}
-} 
+}

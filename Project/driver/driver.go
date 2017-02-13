@@ -30,14 +30,14 @@ const (
 )
 
 
-var	lamp_channel_matrix = [4][3]int{
+var	Lamp_channel_matrix = [4][3]int{
 	{LIGHT_UP1, LIGHT_DOWN1, LIGHT_COMMAND1},
 	{LIGHT_UP2, LIGHT_DOWN2, LIGHT_COMMAND2},
 	{LIGHT_UP3, LIGHT_DOWN3, LIGHT_COMMAND3},
 	{LIGHT_UP4, LIGHT_DOWN4, LIGHT_COMMAND4},
 }
 
-var	button_channel_matrix = [4][3]int{
+var	Button_channel_matrix = [4][3]int{
 	{BUTTON_UP1, BUTTON_DOWN1, BUTTON_COMMAND1},
 	{BUTTON_UP2, BUTTON_DOWN2, BUTTON_COMMAND2},
 	{BUTTON_UP3, BUTTON_DOWN3, BUTTON_COMMAND3},
@@ -50,7 +50,7 @@ var	button_channel_matrix = [4][3]int{
 func InitElevator() {
 	initSuccess := ioInit()
 	if initSuccess == 0{
-		fmt.Println("Could not initialize hardware")
+		panic("Could not initialize hardware")
 	}
 	SetFloorIndicator(0)
 	SetDoorLamp(0)
@@ -61,8 +61,7 @@ func ListenForButtons() [4][3]int {
 	var pushedBtnMatrix [4][3]int
 	for i := 0; i < N_FLOORS; i++ {
 		for j := 0; j < N_BUTTONS; j++ {
-			pushedBtnMatrix[i][j] = ioReadBit(button_channel_matrix[i][j])
-			
+			pushedBtnMatrix[i][j] = ioReadBit(Button_channel_matrix[i][j])
 		}
 	}
 	return pushedBtnMatrix
@@ -88,9 +87,9 @@ func SetButtonLamp(floor int, button int , value int) {
 	if floor < 0 || floor >= N_FLOORS || button < 0 || button >= N_BUTTONS{
 		panic("Floor or button command out of range")
 	}else if value == 1 {
-		ioSetBit(lamp_channel_matrix[floor][button])
+		ioSetBit(Lamp_channel_matrix[floor][button])
 	}else {
-		ioClearBit(lamp_channel_matrix[floor][button])
+		ioClearBit(Lamp_channel_matrix[floor][button])
 	}
 }
 
