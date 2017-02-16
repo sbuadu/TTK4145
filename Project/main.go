@@ -2,9 +2,10 @@ package main
 
 import (
 	//"./driver"
-	"fmt"
-	//"time"
+	//"fmt"
+	"time"
 	"./slave"
+	//"sync"
 )
 
 type Direction int
@@ -15,8 +16,11 @@ const (
 )
 
 func main() {
-	fmt.Println("Initializing Slave")
+	//fmt.Println("Initializing Slave")
+	//go slave.Slave()
 	go slave.Slave()
+	time.Sleep(60*time.Second)
+	driver.SteerElevator(2)
 
 //testing that we are able to steer the elevator and return current floor
 /*

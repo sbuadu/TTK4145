@@ -18,10 +18,10 @@ type Button struct {
 }
 
 // 1 if success, 0 if duplicate order
-func AddOrder(orders chan Order, floor, button int, elevator Elevator, atTime time.Time) int {
+func AddOrder(orderChan chan Order, floor, button int, elevator Elevator, atTime time.Time) int {
 	order := Order{elevator,Button{floor,button}, atTime}
 	if !duplicateOrder(order) {
-		orders <- order
+		orderChan <- order
 		return 1
 	} else {
 		return 0
