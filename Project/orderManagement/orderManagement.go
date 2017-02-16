@@ -3,6 +3,7 @@ package orderManagement
 import(
 "time"
 "../util"
+//"math"
 )
 
 
@@ -42,12 +43,24 @@ func prioritizeOrder() {
 	//TODO: walk through order slice and order them according to priority
 }
 
-func findSuitableElevator() util.Elevator {
+func findSuitableElevator(slaves [3]util.Elevator, order util.Order) util.Elevator {
+
+
 	//TODO: Real functinonality
+
+
 	return util.Elevator{0,"this"}
 }
 
-func calculateCost() int {
-	//TODO: Functionality, maybe add parameters.
+/*not ready work in progress
+func calculateCost(elevator util.Elevator, order util.Order) int {
+var suitableDir = 0;
+//var distance = Abs(elevator.LastFloor - order.Button.Floor)  
+if (elevator.Direction == 0 && order.Button.TypeOfButton == 0 && elevator.LastFloor < order.Button.Floor) || (elevator.Direction == 1 && order.Button.TypeOfButton == 1 && elevator.LastFloor > order.Button.Floor) {
+suitableDir = 1; 
+}
+
+
 	return 0
 }
+*/

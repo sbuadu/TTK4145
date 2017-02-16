@@ -1,6 +1,8 @@
 package util 
 import(
 "time"
+
+"../driver"
 )
 
 type Order struct {
@@ -12,6 +14,8 @@ type Order struct {
 type Elevator struct {
 	ID int
 	IP string
+	lastFloor int
+	direction driver.Direction
 }
 type Button struct {
 	Floor, TypeOfButton int

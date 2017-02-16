@@ -4,7 +4,7 @@ import (
 "../util"
 )
 
-	var Slaves [3]util.Elevator
+	var slaves [3]util.Elevator
 
 func InitSlave() {
 
