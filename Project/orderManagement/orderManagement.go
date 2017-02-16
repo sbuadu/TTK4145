@@ -9,14 +9,11 @@ import(
 var orderSlice = make([]util.Order,0) //slice of orders
 
 // 1 if success, 0 if duplicate order
-func AddOrder(orders chan Order, floor, button int, elevator Elevator, atTime time.Time) int {
+func AddOrder(orderChan chan Order, floor, button int, elevator Elevator, atTime time.Time) int {
 	order := Order{elevator,Button{floor,button}, atTime}
-	{
-		orders <- order
-		return 1
-	} else {
-		return 0
-	}
+	//TODO: check somehow if success
+	orders <- order
+	return 1
 }
 
 func removeOrder(order util.Order, orderSlice []util.Order) []util.Order{

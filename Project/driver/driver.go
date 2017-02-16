@@ -5,7 +5,7 @@ import (
 	//"io"
 	//"channels"
 	//"math"
-"fmt"
+	//"fmt"
 	//"iota"
 )
 
@@ -126,14 +126,14 @@ func SteerElevator(dir Direction) {
 	switch dir {
 	case Stop:
 		ioWriteAnalog(MOTOR, 0)
-		fmt.Println("Stopping elevator")
 	case Up:
 		ioClearBit(MOTORDIR)
 		ioWriteAnalog(MOTOR,MOTOR_SPEED)
-		fmt.Println("Going up")
 	case Down:
+		if GetCurrentFloor() == 0 {
+			SteerElevator(2)
+		}
 		ioSetBit(MOTORDIR)
 		ioWriteAnalog(MOTOR,MOTOR_SPEED)
-		fmt.Println("Going down")
 	}
 }
