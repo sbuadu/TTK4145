@@ -1,4 +1,7 @@
 package util 
+import(
+"time"
+)
 
 type Order struct {
 	ThisElevator Elevator

@@ -19,7 +19,7 @@ func ListenRemoteOrders() {
 	//TODO: Listen for new orders and add them to the orders
 }
 
-func ListenLocalOrders(orderChan chan orderManagement.Order) {
+func ListenLocalOrders(orderChan chan util.Order) {
 
 	//TODO: check if button is already on
 	var buttons [4][3]int
@@ -31,7 +31,7 @@ func ListenLocalOrders(orderChan chan orderManagement.Order) {
 		if changed {
 			IP,_ := localip.LocalIP()
 
-			success := orderManagement.AddOrder(orders, floor, button,util.Elevator{1,IP},time.Now())
+			success := orderManagement.AddOrder(orderChan, floor, button,util.Elevator{1,IP},time.Now())
 			if success == 1 {
 				//TODO: Move this to after order is appended to orders
 				driver.SetButtonLamp(floor, button, 1)
