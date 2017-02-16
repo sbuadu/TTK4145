@@ -52,8 +52,14 @@ func InitElevator() {
 	if initSuccess == 0{
 		panic("Could not initialize hardware")
 	}
+	SteerElevator(2)
 	SetFloorIndicator(0)
 	SetDoorLamp(0)
+	for i := 0;i<N_FLOORS;i++ {
+		for j :=0;j<N_BUTTONS;j++{
+			SetButtonLamp(i,j,0)
+		}
+	}
 
 }
 
@@ -88,7 +94,7 @@ func SetButtonLamp(floor int, button int , value int) {
 		panic("Floor or button command out of range")
 	}else if value == 1 {
 		ioSetBit(Lamp_channel_matrix[floor][button])
-	}else {
+	}else if value == 0{
 		ioClearBit(Lamp_channel_matrix[floor][button])
 	}
 }

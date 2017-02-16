@@ -22,7 +22,7 @@ func ListenLocalOrders(orderChan chan orderManagement.Order) {
 	//TODO: check if button is already on
 	var buttons [4][3]int
 	for {
-		recent := buttons
+		var recent [4][3]int
 		buttons = driver.ListenForButtons()
 		changed,floor,button := CompareMatrix(buttons,recent)
 
@@ -33,34 +33,47 @@ func ListenLocalOrders(orderChan chan orderManagement.Order) {
 				//TODO: Move this to after order is appended to orders
 				driver.SetButtonLamp(floor, button, 1)
 			}
+			changed = false
 		}
 		time.Sleep(10*time.Millisecond)
 	}
 }
-
-func ExecuteOrder() {
-	for {
-		if len(orders) > 0{
-			currentOrder := orders[0]
-			currentFloor := driver.GetCurrentFloor()
-			if currentFloor == currentOrder.FromButton.Floor {
-				driver.SetDoorLamp(1)
-			} else if currentFloor < currentOrder.FromButton.Floor {
-				driver.SteerElevator(0)
-				for ;currentFloor < currentOrder.FromButton.Floor; {
-					if driver.GetCurrentFloor() != -1 {
-						currentFloor = driver.GetCurrentFloor()
-					}
-				}
-			} else if currentFloor > currentOrder.FromButton.Floor {
-				driver.SteerElevator(1)
-				for ;currentFloor > currentOrder.FromButton.Floor; {
-					if driver.GetCurrentFloor() != -1 {
-						currentFloor = driver.GetCurrentFloor()
-					}
-				}
-			}
+func goToFloor(order orderManagement.Order, currentFloor int) {
+	orderFloor := order.FromButton.Floor
+	higher := currentFloor < orderFloor
+	var elevDir driver.Direction
+	if higher {
+		elevDir = 0
+	} else if !higher {
+		elevDir = 1
+	}
+	driver.SetDoorLamp(0)
+	driver.SteerElevator(elevDir)
+	for ;currentFloor != orderFloor; {
+		floor := driver.GetCurrentFloor()
+		if floor != -1 {
+			currentFloor = floor 
+			driver.SetFloorIndicator(currentFloor)
 		}
+	}
+	driver.SteerElevator(2)
+	driver.SetButtonLamp(orderFloor, order.FromButton.TypeOfButton,0)
+}
+func ExecuteOrder(orderChan chan orderManagement.Order) {
+	currentFloor := driver.GetCurrentFloor()
+	if currentFloor == -1 {
+		currentFloor = 0
+	}
+	for {
+		currentOrder := <- orderChan
+		floor := currentOrder.FromButton.Floor
+		currentFloor = driver.GetCurrentFloor()
+		if currentFloor == floor {
+			driver.SetDoorLamp(1)
+		} else {
+			goToFloor(currentOrder,currentFloor)
+		}
+		time.Sleep(10*time.Millisecond)
 	}
 }
 
@@ -78,15 +91,16 @@ func CompareMatrix(newMatrix, oldMatrix [4][3]int) (changed bool, row, column in
 	}
 	return false,0,0
 }
-var orders = make([]orderManagement.Order,0)
+var orders = make([]orderManagement.Order,10)
 
 func Slave() {
 	//var isBackup bool
 	driver.InitElevator()
-	orderChan := make(chan orderManagement.Order)
+	orderChan := make(chan orderManagement.Order,100)
 	go ListenLocalOrders(orderChan)
-	go ExecuteOrder()
-	for {
+	go ExecuteOrder(orderChan)
+	/*for {
 		orders = append(orders,<-orderChan)
 	}
+	*/
 }

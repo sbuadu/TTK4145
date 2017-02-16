@@ -1,7 +1,7 @@
 package main
 
 import (
-	//"./driver"
+	"./driver"
 	//"fmt"
 	"time"
 	"./slave"
@@ -18,6 +18,7 @@ const (
 func main() {
 	//fmt.Println("Initializing Slave")
 	//go slave.Slave()
+	driver.SteerElevator(2)
 	go slave.Slave()
 	time.Sleep(60*time.Second)
 	driver.SteerElevator(2)

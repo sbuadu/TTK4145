@@ -1,4 +1,4 @@
-opackage orderManagement
+package orderManagement
 
 import(
 "time"
@@ -23,12 +23,12 @@ var orderSlice = make([]Order,0) //slice of orders
 func AddOrder(orderChan chan Order, floor, button int, elevator Elevator, atTime time.Time) int {
 	order := Order{elevator,Button{floor,button}, atTime}
 	//TODO: check somehow if success
-	orders <- order
+	orderChan <- order
 	return 1
 }
 
 func removeOrder(order Order, orderSlice []Order) []Order{
-	for i = 0; i < len(orderSlice); ++i{
+	for i := 0; i < len(orderSlice); i++{
 		if(orderSlice[i].FromButton.Floor == order.FromButton.Floor && orderSlice[i].FromButton.TypeOfButton == order.FromButton.TypeOfButton){
 			
 			orderSlice = append(orderSlice[:i], orderSlice[i+1:]...)
@@ -41,7 +41,7 @@ func removeOrder(order Order, orderSlice []Order) []Order{
 
 //returns true if the order already exists in the slice 
 func duplicateOrder(order Order, orderSlice []Order) bool {
-	for i = 0; i < len(orderSlice); ++i{
+	for i := 0; i < len(orderSlice); i++{
 		if(orderSlice[i].FromButton.Floor == order.FromButton.Floor && orderSlice[i].FromButton.TypeOfButton == order.FromButton.TypeOfButton){
 			return true
 		}
