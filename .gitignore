@@ -4,3 +4,5 @@ elevator
 *.swp
 Exercise6/backup
 Exercise6/master
+Project/driver/io.o
+Project/driver/main.o
