@@ -30,7 +30,7 @@ func ListenLocalOrders(orderChan chan util.Order) {
 
 		if changed {
 			IP,_ := localip.LocalIP()
-
+			//TODO: check if order is duplicate
 			success := orderManagement.AddOrder(orderChan, floor, button,util.Elevator{1,IP,0,1},time.Now())
 			if success == 1 {
 				//TODO: Move this to after order is appended to orders
