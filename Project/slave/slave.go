@@ -41,7 +41,7 @@ func CompleteOrder() {
 	//TODO: pick first order in list and perform
 }
 
-func CompareMatrix(new, old [4][3]int) (changed bool, floor, button int) {
+func compareMatrix(new, old [4][3]int) (changed bool, floor, button int) {
 	for i:=0;i<4;i++{
 		for j:=0;j<3;j++{
 			if new[i][j] != old[i][j] {
