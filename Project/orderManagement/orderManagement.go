@@ -1,7 +1,7 @@
-package orderManagement
+opackage orderManagement
 
 import(
-	"time"
+"time"
 )
 type Order struct {
 	ThisElevator Elevator
@@ -17,10 +17,12 @@ type Button struct {
 	Floor, TypeOfButton int
 }
 
+var orderSlice = make([]Order,0) //slice of orders
+
 // 1 if success, 0 if duplicate order
 func AddOrder(orders chan Order, floor, button int, elevator Elevator, atTime time.Time) int {
 	order := Order{elevator,Button{floor,button}, atTime}
-	if !duplicateOrder(order) {
+	{
 		orders <- order
 		return 1
 	} else {
@@ -28,12 +30,25 @@ func AddOrder(orders chan Order, floor, button int, elevator Elevator, atTime ti
 	}
 }
 
-func removeOrder() {
-	//TODO: Remove order from slice
+func removeOrder(order Order, orderSlice []Order) []Order{
+	for i = 0; i < len(orderSlice); ++i{
+		if(orderSlice[i].FromButton.Floor == order.FromButton.Floor && orderSlice[i].FromButton.TypeOfButton == order.FromButton.TypeOfButton){
+			
+			orderSlice = append(orderSlice[:i], orderSlice[i+1:]...)
+			return orderSlice
+		}
+	}
+	panic("Order not found.. ")
+	return orderSlice
 }
 
-func duplicateOrder(order Order) bool {
-	//TODO: 
+//returns true if the order already exists in the slice 
+func duplicateOrder(order Order, orderSlice []Order) bool {
+	for i = 0; i < len(orderSlice); ++i{
+		if(orderSlice[i].FromButton.Floor == order.FromButton.Floor && orderSlice[i].FromButton.TypeOfButton == order.FromButton.TypeOfButton){
+			return true
+		}
+	}
 	return false
 }
 
