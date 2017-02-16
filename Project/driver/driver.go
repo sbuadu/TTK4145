@@ -7,6 +7,7 @@ import (
 	//"math"
 	//"fmt"
 	//"iota"
+	"../util"
 )
 
 
@@ -21,13 +22,6 @@ const(
 	MOTOR_SPEED = 2800
 )
 
-
-type Direction int
-const (
-	Up Direction = iota
-	Down
-	Stop
-)
 
 
 var	Lamp_channel_matrix = [4][3]int{
@@ -128,18 +122,23 @@ func SetFloorIndicator(floor int) {
 	}
 }
 
-func SteerElevator(dir Direction) {
+func SteerElevator(dir util.Direction) {
 	switch dir {
-	case Stop:
+	case 2:
 		ioWriteAnalog(MOTOR, 0)
-	case Up:
-		ioClearBit(MOTORDIR)
-		ioWriteAnalog(MOTOR,MOTOR_SPEED)
-	case Down:
+	case 0:
+		if (GetCurrentFloor() == 3) {
+			SteerElevator(2)
+		} else {
+			ioClearBit(MOTORDIR)
+			ioWriteAnalog(MOTOR,MOTOR_SPEED)
+		}
+	case 1:
 		if GetCurrentFloor() == 0 {
 			SteerElevator(2)
+		} else {
+			ioSetBit(MOTORDIR)
+			ioWriteAnalog(MOTOR,MOTOR_SPEED)
 		}
-		ioSetBit(MOTORDIR)
-		ioWriteAnalog(MOTOR,MOTOR_SPEED)
 	}
 }

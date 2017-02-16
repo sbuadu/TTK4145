@@ -5,6 +5,7 @@ import(
 	"../orderManagement"
 	"../driver"
 	"../network/localip"
+	"../util"
 )
 
 //TODO: make process pair functionality
@@ -18,7 +19,8 @@ func ListenRemoteOrders() {
 	//TODO: Listen for new orders and add them to the orders
 }
 
-func ListenLocalOrders(orderChan chan orderManagement.Order) {
+func ListenLocalOrders(orderChan chan util.Order) {
+
 	//TODO: check if button is already on
 	var buttons [4][3]int
 	for {
@@ -28,7 +30,8 @@ func ListenLocalOrders(orderChan chan orderManagement.Order) {
 
 		if changed {
 			IP,_ := localip.LocalIP()
-			success := orderManagement.AddOrder(orderChan, floor, button, orderManagement.Elevator{1,IP},time.Now())
+
+			success := orderManagement.AddOrder(orderChan, floor, button,util.Elevator{1,IP,0,1},time.Now())
 			if success == 1 {
 				//TODO: Move this to after order is appended to orders
 				driver.SetButtonLamp(floor, button, 1)
@@ -38,10 +41,10 @@ func ListenLocalOrders(orderChan chan orderManagement.Order) {
 		time.Sleep(10*time.Millisecond)
 	}
 }
-func goToFloor(order orderManagement.Order, currentFloor int) {
+func goToFloor(order util.Order, currentFloor int) {
 	orderFloor := order.FromButton.Floor
 	higher := currentFloor < orderFloor
-	var elevDir driver.Direction
+	var elevDir util.Direction
 	if higher {
 		elevDir = 0
 	} else if !higher {
@@ -59,7 +62,7 @@ func goToFloor(order orderManagement.Order, currentFloor int) {
 	driver.SteerElevator(2)
 	driver.SetButtonLamp(orderFloor, order.FromButton.TypeOfButton,0)
 }
-func ExecuteOrder(orderChan chan orderManagement.Order) {
+func ExecuteOrder(orderChan chan util.Order) {
 	currentFloor := driver.GetCurrentFloor()
 	if currentFloor == -1 {
 		currentFloor = 0
@@ -91,12 +94,14 @@ func CompareMatrix(newMatrix, oldMatrix [4][3]int) (changed bool, row, column in
 	}
 	return false,0,0
 }
-var orders = make([]orderManagement.Order,10)
+
+var orders = make([]util.Order,10)
 
 func Slave() {
 	//var isBackup bool
 	driver.InitElevator()
-	orderChan := make(chan orderManagement.Order,100)
+	orderChan := make(chan util.Order,100)
+
 	go ListenLocalOrders(orderChan)
 	go ExecuteOrder(orderChan)
 	/*for {
