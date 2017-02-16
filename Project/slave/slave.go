@@ -64,6 +64,7 @@ func ExecuteOrder() {
 	}
 }
 
+
 func CompareMatrix(newMatrix, oldMatrix [4][3]int) (changed bool, row, column int) {
 	for i:=0;i<4;i++{
 		for j:=0;j<3;j++{
