@@ -23,7 +23,7 @@ type Message struct{
  	toBackup := make(chan Message, 1)
 
  	//staring a new backup 
-	spawnBackup := exec.Command("gnome-terminal", "-x", "sh", "-c", "ssh student@129.187.161 && Sanntid15 && go run /home/student/Documents/TTK4145/Exercise6/backup.go")
+	spawnBackup := exec.Command("gnome-terminal", "-x", "sh", "-c", "ssh student@129.241.187.161 && Sanntid15 && go run /home/student/Documents/TTK4145/Exercise6/backup.go")
 	spawnBackup.Start()
 
 	

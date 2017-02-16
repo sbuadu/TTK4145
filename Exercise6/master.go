@@ -26,7 +26,7 @@ func main(){
 	fmt.Print("Let's count!\n\n")
 	counter := Counter{0}
 
-	spawnBackup := exec.Command("gnome-terminal", "-x", "sh", "-c", "ssh student@129.241.187.156 go && Sanntid15 && run /home/student/Documents/TTK4145/Exercise6/backup.go")
+	spawnBackup := exec.Command("gnome-terminal", "-x", "sh", "-c", "ssh student@129.241.187.156 && echo "Sanntid15" && run /home/student/Documents/TTK4145/Exercise6/backup.go")
 
 	//exec.Command("gnome-terminal", "-x", "go run ~/Documents/TTK4145/Exercise6/backup.go")
 	spawnBackup.Start()
