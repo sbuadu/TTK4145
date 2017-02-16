@@ -5,6 +5,7 @@ import(
 	"../orderManagement"
 	"../driver"
 	"../network/localip"
+	"../util"
 )
 
 //TODO: make process pair functionality
@@ -18,7 +19,7 @@ func ListenRemoteOrders() {
 	//TODO: Listen for new orders and add them to the orders
 }
 
-func ListenLocalOrders(orders chan orderManagement.Order) {
+func ListenLocalOrders(orders chan util.Order) {
 	//TODO: check if button is already on
 	var buttons [4][3]int
 	for {
@@ -28,7 +29,7 @@ func ListenLocalOrders(orders chan orderManagement.Order) {
 
 		if changed {
 			IP,_ := localip.LocalIP()
-			success := orderManagement.AddOrder(orders, floor, button, orderManagement.Elevator{1,IP},time.Now())
+			success := orderManagement.AddOrder(orders, floor, button,util.Elevator{1,IP},time.Now())
 			if success == 1 {
 				driver.SetButtonLamp(floor, button, 1)
 			}
@@ -53,11 +54,11 @@ func compareMatrix(new, old [4][3]int) (changed bool, floor, button int) {
 	}
 	return changed, floor, button
 }
-var orders = make([]orderManagement.Order,0)
+var orders = make([]util.Order,0)
 
 func Slave() {
 	driver.InitElevator()
-	orderChan := make(chan orderManagement.Order)
+	orderChan := make(chan util.Order)
 	go ListenLocalOrders(orderChan)
 	go CompleteOrder()
 	for {

@@ -2,22 +2,11 @@ opackage orderManagement
 
 import(
 "time"
+"../util"
 )
-type Order struct {
-	ThisElevator Elevator
-	FromButton Button
-	AtTime time.Time
-}
 
-type Elevator struct {
-	ID int
-	IP string
-}
-type Button struct {
-	Floor, TypeOfButton int
-}
 
-var orderSlice = make([]Order,0) //slice of orders
+var orderSlice = make([]util.Order,0) //slice of orders
 
 // 1 if success, 0 if duplicate order
 func AddOrder(orders chan Order, floor, button int, elevator Elevator, atTime time.Time) int {
@@ -30,7 +19,7 @@ func AddOrder(orders chan Order, floor, button int, elevator Elevator, atTime ti
 	}
 }
 
-func removeOrder(order Order, orderSlice []Order) []Order{
+func removeOrder(order util.Order, orderSlice []util.Order) []util.Order{
 	for i = 0; i < len(orderSlice); ++i{
 		if(orderSlice[i].FromButton.Floor == order.FromButton.Floor && orderSlice[i].FromButton.TypeOfButton == order.FromButton.TypeOfButton){
 			
@@ -43,7 +32,7 @@ func removeOrder(order Order, orderSlice []Order) []Order{
 }
 
 //returns true if the order already exists in the slice 
-func duplicateOrder(order Order, orderSlice []Order) bool {
+func duplicateOrder(order util.Order, orderSlice []util.Order) bool {
 	for i = 0; i < len(orderSlice); ++i{
 		if(orderSlice[i].FromButton.Floor == order.FromButton.Floor && orderSlice[i].FromButton.TypeOfButton == order.FromButton.TypeOfButton){
 			return true
@@ -56,7 +45,7 @@ func prioritizeOrder() {
 	//TODO: walk through order slice and order them according to priority
 }
 
-func findSuitableElevator() Elevator {
+func findSuitableElevator() util.Elevator {
 	//TODO: Real functinonality
 	return Elevator{0,"this"}
 }
