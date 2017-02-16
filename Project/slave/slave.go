@@ -41,7 +41,7 @@ func CompleteOrder() {
 	//TODO: pick first order in list and perform
 }
 
-func compareMatrix(new, old [4][3]int) (changed bool, floor, button int) {
+func CompareMatrix(new, old [4][3]int) (changed bool, floor, button int) {
 	for i:=0;i<4;i++{
 		for j:=0;j<3;j++{
 			if new[i][j] != old[i][j] {
@@ -54,6 +54,7 @@ func compareMatrix(new, old [4][3]int) (changed bool, floor, button int) {
 	return changed, floor, button
 }
 var orders = make([]orderManagement.Order,0)
+
 func Slave() {
 	driver.InitElevator()
 	orderChan := make(chan orderManagement.Order)
