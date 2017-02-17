@@ -99,7 +99,7 @@ func CompareMatrix(newMatrix, oldMatrix [4][3]int) (changed bool, row, column in
 
 var orders = make([]util.Order,10)
 
-func main() {
+func Slave() {
 	var isBackup bool
 	driver.InitElevator()
 	orderChan := make(chan util.Order,100)
