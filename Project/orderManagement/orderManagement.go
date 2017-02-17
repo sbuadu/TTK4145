@@ -41,7 +41,7 @@ func duplicateOrder(order util.Order, orderSlice []util.Order) bool {
 	return false
 }
 
-func prioritizeOrder(order util.Order, orderSlice []util.Order) []util.Order{
+func PrioritizeOrder(order util.Order, orderSlice []util.Order) []util.Order{
 	//elevator is idle
 	if len(orderSlice) < 1{
 		return append(orderSlice, []util.Order {order} ...)
