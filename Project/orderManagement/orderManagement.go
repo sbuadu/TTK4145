@@ -3,7 +3,7 @@ package orderManagement
 import(
 "time"
 "../util"
-//"math"
+"math"
 )
 
 
@@ -41,28 +41,61 @@ func duplicateOrder(order util.Order, orderSlice []util.Order) bool {
 	return false
 }
 
-func prioritizeOrder() {
-	//TODO: walk through order slice and order them according to priority
+func prioritizeOrder(order util.Order, orderSlice []util.Order) []util.Order{
+	//elevator is idle
+	if len(orderSlice) < 1{
+		return append(orderSlice, []util.Order {order} ...)
+	}else { //elevator is moving
+		for i := 0; i < len(orderSlice) -1; i++{
+			// going up
+			if (orderSlice[i].FromButton.TypeOfButton == 0 && order.FromButton.TypeOfButton == 0 && orderSlice[i].FromButton.Floor < order.FromButton.Floor  && order.FromButton.Floor < orderSlice[i+1].FromButton.Floor){  
+				return append(orderSlice[:i], append([] util.Order{order}, orderSlice[i:] ...)...)
+
+			//elevator going down 
+			}else if (orderSlice[i].FromButton.TypeOfButton == 1 && order.FromButton.TypeOfButton == 1 && orderSlice[i].FromButton.Floor > order.FromButton.Floor && order.FromButton.Floor > orderSlice[i+1].FromButton.Floor){
+				return append(orderSlice[:i], append([] util.Order{order}, orderSlice[i:] ...)...)
+				
+			}
+
+		}
+
+		return append(orderSlice, [] util.Order{order} ...)
+
+
+	}
 }
 
 func findSuitableElevator(slaves [3]util.Elevator, order util.Order) util.Elevator {
+	elevIndex := 0 
+	bestCost := 0
+	for i:= 0 ; i <len(slaves); i++{
+		cost := calculateCost(slaves[i], order)
+		if cost > bestCost{
+			elevIndex = i
+			bestCost = cost 
+		}
+	}
 
-
-	//TODO: Real functinonality
-
-
-	return util.Elevator{0,"this",0,util.Direction(2)}
+	return slaves[elevIndex]
 }
+/*
+When calculating the cost there are three cases to be considered
+1. The call is in the direction of travel and the elevator travelling in direction of the call
+2. The call is in the oposite direction of travel, but the elevator is travelling in the direction of the call
+3. The call is in the oposite direction of travel, and the elevator is travelling in the oposite direction of the call
 
-/*not ready work in progress
-func calculateCost(elevator util.Elevator, order util.Order) int {
-var suitableDir = 0;
-//var distance = Abs(elevator.LastFloor - order.Button.Floor)  
-if (elevator.Direction == 0 && order.Button.TypeOfButton == 0 && elevator.LastFloor < order.Button.Floor) || (elevator.Direction == 1 && order.Button.TypeOfButton == 1 && elevator.LastFloor > order.Button.Floor) {
-suitableDir = 1; 
-}
-
-
-	return 0
-}
+the higher the cost the better
 */
+
+func calculateCost(elevator util.Elevator, order util.Order) int {
+
+	var distance = int(math.Abs(float64(elevator.LastFloor) - float64(order.FromButton.Floor)) )
+
+	if (elevator.ElevDirection ==3) || (elevator.ElevDirection == 0 && order.FromButton.TypeOfButton == 0 && (elevator.LastFloor < order.FromButton.Floor)) || (elevator.ElevDirection == 1 && order.FromButton.TypeOfButton == 1 && elevator.LastFloor > order.FromButton.Floor){
+		return 6 + distance*2
+	} else if (elevator.ElevDirection == 0 && order.FromButton.TypeOfButton == 1 && elevator.LastFloor < order.FromButton.Floor) || (elevator.ElevDirection == 1 && order.FromButton.TypeOfButton == 0 && elevator.LastFloor > order.FromButton.Floor){
+		return  5 + distance*2
+	} else{ 
+		return 1 
+	}
+}
