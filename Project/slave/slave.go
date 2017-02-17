@@ -7,6 +7,7 @@ import(
 	"../network/localip"
 	"../network/bcast"
 	"../util"
+	"fmt"
 )
 
 //TODO: make process pair functionality
@@ -112,4 +113,19 @@ func Slave() {
 		go ListenLocalOrders(orderChan)
 		go bcast.Receiver(20009,backup)
 	}
+}
+
+
+func test(){
+
+	driver.InitElevator()
+	orderChan := make(chan util.Order,100)
+
+	go ListenLocalOrders(orderChan)
+orderSlice := []util.Order{}
+	for{
+		orderSlice = orderManagement.PrioritizeOrder(<- orderChan, orderSlice)
+		fmt.Println(orderSlice)	
+	}
+
 }

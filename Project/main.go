@@ -20,10 +20,13 @@ func main() {
 	//fmt.Println("Initializing Slave")
 	//go slave.Slave()
 	driver.SteerElevator(2)
-	startSlave := exec.Command("gnome-terminal", "-x", "-c","go run /home/student/TTK4145/Project/slave/slave.go -isBackup=false")
+
+	//startSlave := exec.Command("gnome-terminal", "-x", "-c","go run /home/student/TTK4145/Project/slave/slave.go -isBackup=false")
 
 	//exec.Command("gnome-terminal", "-x", "go run ~/Documents/TTK4145/Exercise6/backup.go")
-	startSlave.Start()
+	//startSlave.Start()
+
+	go slave.test()
 	time.Sleep(60*time.Second)
 	driver.SteerElevator(2)
 
