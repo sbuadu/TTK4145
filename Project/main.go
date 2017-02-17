@@ -19,7 +19,7 @@ func main() {
 	//fmt.Println("Initializing Slave")
 	//go slave.Slave()
 	driver.SteerElevator(2)
-	go slave.Slave()
+	go slave.test()
 	time.Sleep(60*time.Second)
 	driver.SteerElevator(2)
 
