@@ -5,6 +5,7 @@ import(
 	"../orderManagement"
 	"../driver"
 	"../network/localip"
+	"../network/bcast"
 	"../util"
 )
 
@@ -55,20 +56,21 @@ func goToFloor(order util.Order, currentFloor int) {
 	for ;currentFloor != orderFloor; {
 		floor := driver.GetCurrentFloor()
 		if floor != -1 {
-			currentFloor = floor 
+			currentFloor = floor
 			driver.SetFloorIndicator(currentFloor)
 		}
 	}
 	driver.SteerElevator(2)
 	driver.SetButtonLamp(orderFloor, order.FromButton.TypeOfButton,0)
 }
+
 func ExecuteOrder(orderChan chan util.Order) {
 	currentFloor := driver.GetCurrentFloor()
 	if currentFloor == -1 {
 		currentFloor = 0
 	}
 	for {
-		currentOrder := <- orderChan
+		currentOrder := <-orderChan
 		floor := currentOrder.FromButton.Floor
 		currentFloor = driver.GetCurrentFloor()
 		if currentFloor == floor {
@@ -97,15 +99,17 @@ func CompareMatrix(newMatrix, oldMatrix [4][3]int) (changed bool, row, column in
 
 var orders = make([]util.Order,10)
 
-func Slave() {
-	//var isBackup bool
+func main() {
+	var isBackup bool
 	driver.InitElevator()
 	orderChan := make(chan util.Order,100)
-
-	go ListenLocalOrders(orderChan)
-	go ExecuteOrder(orderChan)
-	/*for {
-		orders = append(orders,<-orderChan)
+	backup := make(chan util.Order)
+	if !isBackup {
+		go ListenLocalOrders(orderChan)
+		go ExecuteOrder(orderChan)
+		go bcast.Transmitter(20009,backup)
+	}  else if isBackup {
+		go ListenLocalOrders(orderChan)
+		go bcast.Receiver(20009,backup)
 	}
-	*/
 }
