@@ -2,7 +2,7 @@ package orderManagement
 
 import (
 	"../util"
-	"fmt"
+//	"fmt"
 	"math"
 	"time"
 )
@@ -13,9 +13,9 @@ var orderSlice = make([]util.Order, 0) //slice of orders
 func AddOrder(orderChan chan []util.Order, floor, button int, elevator util.Elevator, atTime time.Time) int {
 	order := util.Order{elevator, util.Button{floor, button}, atTime}
 	//TODO: check somehow if success
-	fmt.Println("Adding order")
+
 	orderSlice := <-orderChan
-	fmt.Println("Added order")
+
 	if duplicateOrder(order, orderSlice) {
 		orderChan <- orderSlice
 		return 0
@@ -52,17 +52,19 @@ func duplicateOrder(order util.Order, orderSlice []util.Order) bool {
 
 func PrioritizeOrder(order util.Order, orderSlice []util.Order) []util.Order {
 	//elevator is idle
-	if len(orderSlice) < 1 {
+	if len(orderSlice) < 1 { //if no orders
 		return append(orderSlice, []util.Order{order}...)
-	} else { //elevator is moving
+	} 	else { 
 		for i := 0; i < len(orderSlice)-1; i++ {
 			// going up
 			if orderSlice[i].FromButton.TypeOfButton == 0 && order.FromButton.TypeOfButton == 0 && orderSlice[i].FromButton.Floor < order.FromButton.Floor && order.FromButton.Floor < orderSlice[i+1].FromButton.Floor {
-				return append(orderSlice[:i], append([]util.Order{order}, orderSlice[i:]...)...)
+		
+				return append(orderSlice[:i+1], append([]util.Order{order}, orderSlice[i+1:]...)...)
 
 				//elevator going down
 			} else if orderSlice[i].FromButton.TypeOfButton == 1 && order.FromButton.TypeOfButton == 1 && orderSlice[i].FromButton.Floor > order.FromButton.Floor && order.FromButton.Floor > orderSlice[i+1].FromButton.Floor {
-				return append(orderSlice[:i], append([]util.Order{order}, orderSlice[i:]...)...)
+			
+				return append(orderSlice[:i+1], append([]util.Order{order}, orderSlice[i+1:]...)...)
 
 			}
 
@@ -107,4 +109,8 @@ func calculateCost(elevator util.Elevator, order util.Order) int {
 	} else {
 		return 1
 	}
+}
+
+func sendOrder(){
+	//TO DO
 }
