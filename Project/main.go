@@ -28,8 +28,7 @@ func main() {
 	//exec.Command("gnome-terminal", "-x", "go run ~/Documents/TTK4145/Exercise6/backup.go")
 	//startSlave.Start()
 
-	go slave.Test()
-<<<<<<< HEAD
+	go slave.Slave()
 	time.Sleep(60*time.Second)
 	driver.SteerElevator(2)
 

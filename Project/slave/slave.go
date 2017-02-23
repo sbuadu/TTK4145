@@ -29,14 +29,11 @@ func ListenLocalOrders(orderChan chan []util.Order) {
 		var recent [4][3]int
 		buttons = driver.ListenForButtons()
 		changed, floor, button := CompareMatrix(buttons, recent)
-		fmt.Println(changed)
 
 		if changed {
 			IP, _ := localip.LocalIP()
 			//TODO: check if order is duplicate
-			fmt.Println(".localsuccess.")
 			success := orderManagement.AddOrder(orderChan, floor, button, util.Elevator{1, IP, 0, 1}, time.Now())
-			fmt.Println(".localsuccess2.")
 			if success == 1 {
 				//TODO: Move this to after order is appended to orders
 				driver.SetButtonLamp(floor, button, 1)
@@ -76,19 +73,23 @@ func ExecuteOrder(orderChan chan []util.Order) {
 	}
 	for {
 		orderSlice := <-orderChan
-		currentOrder := orderSlice[0]
-		orderChan <- orderSlice
-		floor := currentOrder.FromButton.Floor
-		currentFloor = driver.GetCurrentFloor()
-		if currentFloor == floor {
-			driver.SetDoorLamp(1)
-			orderSlice := <-orderChan
-			orderSlice := orderManagement(currentOrder, orderSlice)
+			if len(orderSlice) > 0 {
+			currentOrder := orderSlice[0]
 			orderChan <- orderSlice
+			floor := currentOrder.FromButton.Floor
+			currentFloor = driver.GetCurrentFloor()
+			if currentFloor == floor {
+				driver.SetDoorLamp(1)
+				orderSlice := <-orderChan
+				orderSlice = orderManagement.RemoveOrder(currentOrder, orderSlice)
+				orderChan <- orderSlice
+			} else {
+				goToFloor(currentOrder, currentFloor)
+				orderSlice := <-orderChan
+				orderSlice = orderManagement.RemoveOrder(currentOrder, orderSlice)
+				orderChan <- orderSlice
+			}
 		} else {
-			goToFloor(currentOrder, currentFloor)
-			orderSlice := <-orderChan
-			orderSlice := orderManagement(currentOrder, orderSlice)
 			orderChan <- orderSlice
 		}
 		time.Sleep(10 * time.Millisecond)
@@ -112,9 +113,10 @@ func CompareMatrix(newMatrix, oldMatrix [4][3]int) (changed bool, row, column in
 var orders = make([]util.Order, 10)
 
 func Slave() {
-	var isBackup bool
+	var isBackup = false
 	driver.InitElevator()
 	orderChan := make(chan []util.Order, 100)
+	orderChan <- []util.Order{}
 	backup := make(chan []util.Order)
 	if !isBackup {
 		go ListenLocalOrders(orderChan)

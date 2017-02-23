@@ -1,10 +1,11 @@
 package orderManagement
 
 import (
-"../util"
-//	"fmt"
-"math"
-"time"
+
+	"../util"
+	"fmt"
+	"math"
+	"time"
 )
 
 var orderSlice = make([]util.Order, 0) //slice of orders
@@ -27,15 +28,19 @@ func AddOrder(orderChan chan []util.Order, floor, button int, elevator util.Elev
 	}
 }
 
-func removeOrder(order util.Order, orderSlice []util.Order) []util.Order {
+func RemoveOrder(order util.Order, orderSlice []util.Order) []util.Order {
 	for i := 0; i < len(orderSlice); i++ {
 		if orderSlice[i].FromButton.Floor == order.FromButton.Floor && orderSlice[i].FromButton.TypeOfButton == order.FromButton.TypeOfButton {
 
 			orderSlice = append(orderSlice[:i], orderSlice[i+1:]...)
+			fmt.Println("Removing order", order.FromButton.TypeOfButton, order.FromButton.Floor)
+			if len(orderSlice) == 0 {
+				return []util.Order{}
+			}
 			return orderSlice
 		}
 	}
-	panic("Order not found.. ")
+	//panic("Order not found.. ")
 	return orderSlice
 }
 
