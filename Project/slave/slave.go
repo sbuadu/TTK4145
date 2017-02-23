@@ -116,7 +116,7 @@ func Slave() {
 }
 
 
-func test(){
+func Test(){
 
 	driver.InitElevator()
 	orderChan := make(chan util.Order,100)

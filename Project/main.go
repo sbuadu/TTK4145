@@ -4,8 +4,8 @@ import (
 	"./driver"
 	//"fmt"
 	"time"
-	"os/exec"
-	//"./slave"
+	//"os/exec"
+	"./slave"
 	//"sync"
 )
 
@@ -26,7 +26,7 @@ func main() {
 	//exec.Command("gnome-terminal", "-x", "go run ~/Documents/TTK4145/Exercise6/backup.go")
 	//startSlave.Start()
 
-	go slave.test()
+	go slave.Test()
 	time.Sleep(60*time.Second)
 	driver.SteerElevator(2)
 
