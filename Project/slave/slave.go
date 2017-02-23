@@ -8,6 +8,7 @@ import (
 	"../util"
 	"fmt"
 	"time"
+	"math/rand"
 )
 
 //TODO: make process pair functionality
@@ -23,7 +24,6 @@ func ListenRemoteOrders(listenForOrders chan util.Order, orderChan chan []util.O
 	//TODO: callback
 	for {
 		order := <- listenForOrders
-		fmt.Println("Slave receivee order", order)
 		success := orderManagement.AddOrder(orderChan, order.FromButton.Floor, order.FromButton.TypeOfButton, order.ThisElevator, order.AtTime)
 			if success == 1 {
 				driver.SetButtonLamp(order.FromButton.Floor, order.FromButton.TypeOfButton, 1)
@@ -44,9 +44,6 @@ func ListenLocalOrders(callback chan time.Time, sendOrders chan util.Order, orde
 		changed, floor, button := CompareMatrix(buttons, recent)
 
 		if changed {
-			IP, _ := localip.LocalIP()
-			//TODO: check if order is duplicate
-			thisElevator := util.Elevator{1, IP, 0, 1}
 			if button == 0 || button == 1 {
 				order := util.Order{thisElevator, util.Button{floor, button}, time.Now()} 
 				go SendOrder(order, sendOrders, callback)
@@ -73,14 +70,17 @@ func goToFloor(order util.Order, currentFloor int) {
 	}
 	driver.SetDoorLamp(0)
 	driver.SteerElevator(elevDir)
+	thisElevator.ElevDirection = elevDir
 	for currentFloor != orderFloor {
 		floor := driver.GetCurrentFloor()
 		if floor != -1 {
 			currentFloor = floor
+			thisElevator.LastFloor = currentFloor
 			driver.SetFloorIndicator(currentFloor)
 		}
 	}
 	driver.SteerElevator(2)
+	thisElevator.ElevDirection = 2
 	driver.SetButtonLamp(orderFloor, order.FromButton.TypeOfButton, 0)
 	driver.SetDoorLamp(1)
 }
@@ -102,6 +102,7 @@ func ExecuteOrder(orderChan chan []util.Order) {
 				orderSlice := <-orderChan
 				orderSlice = orderManagement.RemoveOrder(currentOrder, orderSlice)
 				orderChan <- orderSlice
+				driver.SetButtonLamp(currentOrder.FromButton.Floor, currentOrder.FromButton.TypeOfButton, 0)
 			} else {
 				goToFloor(currentOrder, currentFloor)
 				orderSlice := <-orderChan
@@ -128,10 +129,10 @@ func CompareMatrix(newMatrix, oldMatrix [4][3]int) (changed bool, row, column in
 	}
 	return false, 0, 0
 }
-
-var orders = make([]util.Order, 10)
-
+var IP,_ = localip.LocalIP()
+var thisElevator = util.Elevator{rand.Intn(100),IP,0,2}
 func Slave() {
+	
 	var isBackup = false
 	driver.InitElevator()
 	orderChan := make(chan []util.Order, 100)

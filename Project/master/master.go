@@ -2,7 +2,7 @@ package master
 import (
 
 	"../util"
-	"fmt"
+	//"fmt"
 )
 
 	var slaves [3]util.Elevator
@@ -13,7 +13,6 @@ func InitSlave() {
 
 func sendOrder(order util.Order, sendOrders chan util.Order) {
 	sendOrders <- order
-	fmt.Println("Master Sent order", order)
 	//TODO: callback functionality
 }
 
