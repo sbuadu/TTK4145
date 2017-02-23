@@ -14,17 +14,22 @@ import (
 
 func SendOrder(order util.Order, sendOrders chan util.Order, callback chan time.Time) {
 		sendOrders <- order
+		//fmt.Println("Slave Sent order", order)
+
 		//TODO: callback functionality
 }
 
 func ListenRemoteOrders(listenForOrders chan util.Order, orderChan chan []util.Order) {
-	//TODO: Listen for new orders and add them to the orders
-	order := <- listenForOrders
-	success := orderManagement.AddOrder(orderChan, order.FromButton.Floor, order.FromButton.TypeOfButton, order.ThisElevator, order.AtTime)
+	//TODO: callback
+	for {
+		order := <- listenForOrders
+		fmt.Println("Slave receivee order", order)
+		success := orderManagement.AddOrder(orderChan, order.FromButton.Floor, order.FromButton.TypeOfButton, order.ThisElevator, order.AtTime)
 			if success == 1 {
 				driver.SetButtonLamp(order.FromButton.Floor, order.FromButton.TypeOfButton, 1)
 
 			}
+		}
 
 }
 
@@ -136,10 +141,11 @@ func Slave() {
 	callback := make(chan time.Time)
 	if !isBackup {
 		go bcast.Transmitter(20009, sendOrders)
-		go bcast.Receiver(20009, listenForOrders)
-		go bcast.Receiver(22222, callback)
+		go bcast.Receiver(20010, listenForOrders)
+		go bcast.Receiver(20009, callback)
 		go ListenLocalOrders(callback, sendOrders, orderChan)
 		go ExecuteOrder(orderChan)
+		go ListenRemoteOrders(listenForOrders, orderChan)
 	} else if isBackup {
 		go ListenLocalOrders(callback, sendOrders, orderChan)
 		go bcast.Receiver(20009, listenForOrders)

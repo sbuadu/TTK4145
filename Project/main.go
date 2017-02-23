@@ -6,7 +6,9 @@ import (
 	//"os/exec"
 	"./slave"
 	"time"
-
+	"./network/bcast"
+	"./master"
+	"./util"
 	//"sync"
 )
 
@@ -27,8 +29,12 @@ func main() {
 
 	//exec.Command("gnome-terminal", "-x", "go run ~/Documents/TTK4145/Exercise6/backup.go")
 	//startSlave.Start()
-
+	listenForOrders := make(chan util.Order)
+	sendOrders := make(chan util.Order)
+	go bcast.Transmitter(20010, sendOrders)
+	go bcast.Receiver(20009, listenForOrders)
 	go slave.Slave()
+	go master.HandleOrder(listenForOrders,sendOrders)
 	time.Sleep(60*time.Second)
 	driver.SteerElevator(2)
 
