@@ -77,12 +77,19 @@ func ExecuteOrder(orderChan chan []util.Order) {
 	for {
 		orderSlice := <-orderChan
 		currentOrder := orderSlice[0]
+		orderChan <- orderSlice
 		floor := currentOrder.FromButton.Floor
 		currentFloor = driver.GetCurrentFloor()
 		if currentFloor == floor {
 			driver.SetDoorLamp(1)
+			orderSlice := <-orderChan
+			orderSlice := orderManagement(currentOrder, orderSlice)
+			orderChan <- orderSlice
 		} else {
 			goToFloor(currentOrder, currentFloor)
+			orderSlice := <-orderChan
+			orderSlice := orderManagement(currentOrder, orderSlice)
+			orderChan <- orderSlice
 		}
 		time.Sleep(10 * time.Millisecond)
 	}
@@ -119,7 +126,6 @@ func Slave() {
 	}
 }
 
-<<<<<<< HEAD
 
 func Test() {
 
