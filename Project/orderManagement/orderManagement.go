@@ -1,6 +1,7 @@
 package orderManagement
 
 import (
+
 	"../util"
 	"fmt"
 	"math"
@@ -54,28 +55,39 @@ func duplicateOrder(order util.Order, orderSlice []util.Order) bool {
 	return false
 }
 
-func PrioritizeOrder(order util.Order, orderSlice []util.Order) []util.Order {
-	//elevator is idle
+func PrioritizeOrder(order util.Order, orderSlice []util.Order, elevator util.Elevator) []util.Order {
+	
 	if len(orderSlice) < 1 { //if no orders
 		return append(orderSlice, []util.Order{order}...)
-	} 	else { 
+
+	}else if order.FromButton.TypeOfButton == 3{ //internal order 
+		 index := -1
 		for i := 0; i < len(orderSlice)-1; i++ {
-			// going up
-			if orderSlice[i].FromButton.TypeOfButton == 0 && order.FromButton.TypeOfButton == 0 && orderSlice[i].FromButton.Floor < order.FromButton.Floor && order.FromButton.Floor < orderSlice[i+1].FromButton.Floor {
-		
-				return append(orderSlice[:i+1], append([]util.Order{order}, orderSlice[i+1:]...)...)
-
-				//elevator going down
-			} else if orderSlice[i].FromButton.TypeOfButton == 1 && order.FromButton.TypeOfButton == 1 && orderSlice[i].FromButton.Floor > order.FromButton.Floor && order.FromButton.Floor > orderSlice[i+1].FromButton.Floor {
-			
-				return append(orderSlice[:i+1], append([]util.Order{order}, orderSlice[i+1:]...)...)
-
+			if  elevator.ElevDirection == 0 && order.FromButton.Floor > orderSlice[i].FromButton.Floor && orderSlice[i].FromButton.Floor > elevator.LastFloor{ //checking of the next orders could go first 
+				index = i 
+			}	else if elevator.ElevDirection == 1 && order.FromButton.Floor < orderSlice[i].FromButton.Floor && orderSlice[i].FromButton.Floor < elevator.LastFloor {
+					index = i 
+				}else 
+				break; 
 			}
-
 		}
 
+		if index == -1 {
+			return append([]util.Order{order}, orderSlice, )
+		}else{
+			return append(orderSlice[:i+1], append([]util.Order{order}, orderSlice[i+1:]...)...)
+		}
+	}else{ //external order
+		for i := 0; i < len(orderSlice)-1; i++ {
+			// going up
+			if elevator.ElevDirection == 0 && order.FromButton.TypeOfButton == 0 && elevator.LastFloor < order.FromButton.Floor && order.FromButton.Floor < orderSlice[i].FromButton.Floor {
+				return append(orderSlice[:i], append([]util.Order{order}, orderSlice[i:]...)...)
+				//elevator going down
+			} else if  elevator.ElevDirection == 1 && order.FromButton.TypeOfButton == 1 && elevator.LastFloor > order.FromButton.Floor && order.FromButton.Floor > orderSlice[i].FromButton.Floor {
+				return append(orderSlice[:i], append([]util.Order{order}, orderSlice[i:]...)...)
+			}
+		}
 		return append(orderSlice, []util.Order{order}...)
-
 	}
 }
 
