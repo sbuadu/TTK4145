@@ -22,7 +22,7 @@ func AddOrder(orderChan chan []util.Order, floor, button int, elevator util.Elev
 		return 0
 	} else {
 
-		orderSlice = PrioritizeOrder(order, orderSlice)
+		orderSlice = PrioritizeOrder(order, orderSlice, elevator)
 		orderChan <- orderSlice
 		return 1
 	}
@@ -60,22 +60,22 @@ func PrioritizeOrder(order util.Order, orderSlice []util.Order, elevator util.El
 	if len(orderSlice) < 1 { //if no orders
 		return append(orderSlice, []util.Order{order}...)
 
-	}else if order.FromButton.TypeOfButton == 3{ //internal order 
-		 index := -1
+	} else if order.FromButton.TypeOfButton == 3 { //internal order 
+		index := -1
 		for i := 0; i < len(orderSlice)-1; i++ {
 			if  elevator.ElevDirection == 0 && order.FromButton.Floor > orderSlice[i].FromButton.Floor && orderSlice[i].FromButton.Floor > elevator.LastFloor{ //checking of the next orders could go first 
 				index = i 
 			}	else if elevator.ElevDirection == 1 && order.FromButton.Floor < orderSlice[i].FromButton.Floor && orderSlice[i].FromButton.Floor < elevator.LastFloor {
 					index = i 
-				}else 
-				break; 
+				}else {
+					break; 
 			}
 		}
 
 		if index == -1 {
-			return append([]util.Order{order}, orderSlice, )
+			return append([]util.Order{order}, orderSlice[0:]...)
 		}else{
-			return append(orderSlice[:i+1], append([]util.Order{order}, orderSlice[i+1:]...)...)
+			return append(orderSlice[:index+1], append([]util.Order{order}, orderSlice[index+1:]...)...)
 		}
 	}else{ //external order
 		for i := 0; i < len(orderSlice)-1; i++ {
