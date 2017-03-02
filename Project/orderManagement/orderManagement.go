@@ -66,8 +66,6 @@ func PrioritizeOrder(order util.Order, orderSlice []util.Order, elevator util.El
 				index = i
 			} else if elevator.ElevDirection == 1 && order.FromButton.Floor < orderSlice[i].FromButton.Floor && orderSlice[i].FromButton.Floor < elevator.LastFloor {
 				index = i
-			} else {
-				break
 			}
 		}
 

@@ -6,8 +6,9 @@ import (
 	"../network/localip"
 	"../orderManagement"
 	"../util"
-	//"fmt"
+	"fmt"
 	"math/rand"
+	"os/exec"
 	"time"
 )
 
@@ -169,43 +170,62 @@ func Slave(isBackup bool) {
 	stateChanMaster := make(chan util.Elevator, 1) // used to send updates on the elevators state to master
 
 	if isBackup {
-		go bcast.Receiver(20000, orderChanBackup, stateChanBackup)
+		go bcast.Receiver(20010, orderChanBackup, stateChanBackup)
 		tmr := time.NewTimer(5 * time.Second)
 
 		go func() {
 			<-tmr.C
 			isBackup = false
 			orderChan <- orderSlice
+			fmt.Println("Taking over as slave")
+			spawnBackup := exec.Command("gnome-terminal", "-x", "sh", "-c", "go run /home/student/TTK4145/Project/main.go -startSlaveBackup")
+			spawnBackup.Start()
 		}()
 
 		go func() {
-			if !isBackup {
-				return
-			} else {
-				thisElevator = <-stateChanBackup
-				tmr.Reset(3 * time.Second)
+			for {
+				if isBackup {
+					fmt.Println("Listening to slave")
+					thisElevator = <-stateChanBackup
+					fmt.Println(thisElevator)
+					tmr.Reset(5 * time.Second)
+				} else if !isBackup {
+					return
+				}
 			}
 		}()
 
 		go func() {
-			orderSlice = <-orderChanBackup
+			for {
+				if len(orderChanBackup) == cap(orderChanBackup) {
+					orderSlice = <-orderChanBackup
+				}
+				if !isBackup {
+					return
+				}
+			}
 		}()
 	}
 
 	if !isBackup {
+		fmt.Println("I'm a slave now")
 		go bcast.Transmitter(20009, sendOrders, orderChanMaster, stateChanMaster)
-		go bcast.Receiver(20010, listenForOrders, callback)
+		go bcast.Receiver(20009, listenForOrders, callback)
 
-		go bcast.Transmitter(20000, orderChanBackup, stateChanBackup)
+		go bcast.Transmitter(20010, orderChanBackup, stateChanBackup)
 
 		go ListenLocalOrders(callback, sendOrders, orderChan, orderChanMaster, orderChanBackup)
 		go ExecuteOrder(orderChan)
 		go ListenRemoteOrders(listenForOrders, orderChan, orderChanMaster, orderChanBackup)
 
 		go func() {
-			stateChanBackup <- thisElevator
-			stateChanMaster <- thisElevator
-			time.Sleep(1 * time.Second)
+			for {
+				fmt.Println("Sending to backup")
+				stateChanBackup <- thisElevator
+				//stateChanMaster <- thisElevator
+				fmt.Println("Sent to backup")
+				time.Sleep(1 * time.Second)
+			}
 		}()
 	}
 }
