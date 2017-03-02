@@ -1,8 +1,8 @@
 package master
 
 import (
-	"../network/bcast"
-	"../util"
+"../network/bcast"
+"../util"
 	//"fmt"
 	//"../orderManagement"
 )
@@ -34,19 +34,46 @@ func distributeOrder(listenForOrders chan util.Order, sendOrders chan util.Order
 	}
 }
 
-func Master(isBackup bool) {
 
+
+func Master(isBackup bool) {
+	//receiving from slave
 	listenForOrders := make(chan util.Order)
-	sendOrders := make(chan util.Order)
 	listenForSlaves := make(chan util.Elevator)
-	//listenForOrderSlice := make(chan []util.Order)
+	listenForOrderSlice := make(chan []util.Order,1)
+
+	//sending to slave
+	sendOrders := make(chan util.Order)
+
+	//variable saving states
+	orderSliceSlave := []util.Order{}
+
+
 	if isBackup {
+
+
+
 	}
-	for i := 0; i < util.Nslaves; i++ {
-		InitSlave(slaveIPs[i])
-	}
+
+	if !isBackup{
+		for i := 0; i < util.Nslaves; i++ {
+			InitSlave(slaveIPs[i])
+		}
 	//start backup master on remote pc, take first in list that is not itself
-	go bcast.Transmitter(20010, sendOrders)
-	go bcast.Receiver(20009, listenForOrders, listenForSlaves)
-	go distributeOrder(listenForOrders, sendOrders)
-}
+
+		go bcast.Transmitter(20009, sendOrders)
+		go bcast.Receiver(20009, listenForOrders, listenForSlaves, listenForOrderSlice)
+
+		go distributeOrder(listenForOrders, sendOrders)
+
+
+	//updating info from slave 
+		go func(){  
+			for{
+				orderSliceSlave =<- listenForOrderSlice
+			}
+			}()
+
+		}
+
+	}
