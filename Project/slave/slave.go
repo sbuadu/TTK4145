@@ -1,32 +1,42 @@
 package slave
 
 import (
-"../driver"
-"../network/bcast"
-"../network/localip"
-"../orderManagement"
-"../util"
-"fmt"
-"time"
-"math/rand"
+	"../driver"
+	"../network/bcast"
+	"../network/localip"
+	"../orderManagement"
+	"../util"
+	//"fmt"
+	"math/rand"
+	"time"
 )
 
 //TODO: make process pair functionality
 
-func SendOrder(order util.Order, sendOrders chan util.Order, callback chan time.Time) {
-	sendOrders <- order
-		//fmt.Println("Slave Sent order", order)
+func SendOrder(order util.Order, sendOrders chan util.Order, orderChanBackup, orderChanMaster, orderChan chan []util.Order) {
+	select {
+	case sendOrders <- order:
+	default:
+		success := orderManagement.AddOrder(orderChan, order.FromButton.Floor, order.FromButton.TypeOfButton, order.ThisElevator, order.AtTime)
+		if success == 1 {
+			orderSlice := <-orderChan
+			orderChanBackup <- orderSlice
+			orderChanMaster <- orderSlice
+			orderChan <- orderSlice
+			driver.SetButtonLamp(order.FromButton.Floor, order.FromButton.TypeOfButton, 1)
+		}
 
 		//TODO: callback functionality
+	}
 }
 
 func ListenRemoteOrders(listenForOrders chan util.Order, orderChan, orderChanBackup, orderChanMaster chan []util.Order) {
 	//TODO: callback
 	for {
-		order := <- listenForOrders
+		order := <-listenForOrders
 		success := orderManagement.AddOrder(orderChan, order.FromButton.Floor, order.FromButton.TypeOfButton, order.ThisElevator, order.AtTime)
 		if success == 1 {
-			orderSlice := <- orderChan
+			orderSlice := <-orderChan
 			orderChanBackup <- orderSlice
 			orderChanMaster <- orderSlice
 			orderChan <- orderSlice
@@ -49,12 +59,12 @@ func ListenLocalOrders(callback chan time.Time, sendOrders chan util.Order, orde
 
 		if changed {
 			if button == 0 || button == 1 {
-				order := util.Order{thisElevator, util.Button{floor, button}, time.Now()} 
-				go SendOrder(order, sendOrders, callback)
+				order := util.Order{thisElevator, util.Button{floor, button}, time.Now()}
+				go SendOrder(order, sendOrders, orderChanBackup, orderChanMaster, orderChan)
 			} else {
 				success := orderManagement.AddOrder(orderChan, floor, button, thisElevator, time.Now())
 				if success == 1 {
-					orderSlice := <- orderChan
+					orderSlice := <-orderChan
 					orderChanBackup <- orderSlice
 					orderChanMaster <- orderSlice
 					orderChan <- orderSlice
@@ -119,7 +129,7 @@ func ExecuteOrder(orderChan chan []util.Order) {
 		} else {
 			orderChan <- orderSlice
 		}
-		time.Sleep(10 * time.Millisecond)
+		time.Sleep(util.DoorOpenTime)
 	}
 }
 
@@ -136,11 +146,12 @@ func CompareMatrix(newMatrix, oldMatrix [4][3]int) (changed bool, row, column in
 	}
 	return false, 0, 0
 }
-var IP,_ = localip.LocalIP()
-var thisElevator = util.Elevator{rand.Intn(100),IP,0,2}
-func Slave() {
-	
-	var isBackup = false
+
+var IP, _ = localip.LocalIP()
+var thisElevator = util.Elevator{rand.Intn(100), IP, 0, 2}
+
+func Slave(isBackup bool) {
+
 	driver.InitElevator()
 	orderChan := make(chan []util.Order, 100)
 	orderSlice := []util.Order{}
@@ -149,59 +160,53 @@ func Slave() {
 	sendOrders := make(chan util.Order)
 	callback := make(chan time.Time)
 
-	orderChanBackup := make(chan []util.Order, 1) //used to send updates on order slice to backup
-	stateChanBackup := make(chan util.Elevator, 1)// used to send updates on the elevators state to backup 
+	orderChanBackup := make(chan []util.Order, 1)  //used to send updates on order slice to backup
+	stateChanBackup := make(chan util.Elevator, 1) // used to send updates on the elevators state to backup
 
-	orderChanMaster := make(chan []util.Order, 1) //used to send updates on order slice to master 
-	stateChanMaster := make(chan util.Elevator, 1)// used to send updates on the elevators state to master 
+	orderChanMaster := make(chan []util.Order, 1)  //used to send updates on order slice to master
+	stateChanMaster := make(chan util.Elevator, 1) // used to send updates on the elevators state to master
 
 	if isBackup {
 		go bcast.Receiver(20000, orderChanBackup, stateChanBackup)
-		tmr := time.NewTimer(5*time.Second)
-		
-		go func (){
-			<- tmr.C
+		tmr := time.NewTimer(5 * time.Second)
+
+		go func() {
+			<-tmr.C
 			isBackup = false
 			orderChan <- orderSlice
-			}()
+		}()
 
-			go func(){
-				if !isBackup{
-					return
-				}else{
-					thisElevator =<- stateChanBackup 
-					tmr.Reset(3*time.Second)
-				}
-				}()
+		go func() {
+			if !isBackup {
+				return
+			} else {
+				thisElevator = <-stateChanBackup
+				tmr.Reset(3 * time.Second)
+			}
+		}()
 
-
-				go func(){
-					orderSlice =<- orderChanBackup	
-				}()
+		go func() {
+			orderSlice = <-orderChanBackup
+		}()
 	}
 
+	if !isBackup {
+		go bcast.Transmitter(20009, sendOrders, orderChanMaster, stateChanMaster)
+		go bcast.Receiver(20010, listenForOrders, callback)
 
+		go bcast.Transmitter(20000, orderChanBackup, stateChanBackup)
 
-					if !isBackup {
-						go bcast.Transmitter(20009, sendOrders, orderChanMaster, stateChanMaster)
-						go bcast.Receiver(20010, listenForOrders, callback)
+		go ListenLocalOrders(callback, sendOrders, orderChan, orderChanMaster, orderChanBackup)
+		go ExecuteOrder(orderChan)
+		go ListenRemoteOrders(listenForOrders, orderChan, orderChanMaster, orderChanBackup)
 
-						go bcast.Transmitter(20000, orderChanBackup, stateChanBackup)
-
-
-						go ListenLocalOrders(callback, sendOrders, orderChan, orderChanMaster, orderChanBackup)
-						go ExecuteOrder(orderChan)
-						go ListenRemoteOrders(listenForOrders, orderChan, orderChanMaster, orderChanBackup)
-
-						go func(){
-							stateChanBackup <- thisElevator
-							stateChanMaster <- thisElevator
-							time.Sleep(1*time.Second)
-							}()
-						}
-					}
-
-
+		go func() {
+			stateChanBackup <- thisElevator
+			stateChanMaster <- thisElevator
+			time.Sleep(1 * time.Second)
+		}()
+	}
+}
 
 /*
 					func Test() {
