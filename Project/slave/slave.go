@@ -142,7 +142,7 @@ func Slave() {
 	
 	var isBackup = false
 	driver.InitElevator()
-	orderChan := make(chan []util.Order, 100)
+	orderChan := make(chan []util.Order)
 	orderSlice := []util.Order{}
 	orderChan <- orderSlice
 	listenForOrders := make(chan util.Order)

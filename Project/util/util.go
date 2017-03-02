@@ -2,6 +2,8 @@ package util
 import(
 "time"
 )
+
+var Nslaves = 3
 type Direction int
 const (
 	Up Direction = iota

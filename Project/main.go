@@ -23,20 +23,26 @@ const (
 func main() {
 	//fmt.Println("Initializing Slave")
 	//go slave.Slave()
+	var startMaster bool
+	var startSlave bool
+	var startMasterBackup bool
+	var startSlaveBackup bool
+	//ifs and shit
 	driver.SteerElevator(2)
 
 	//startSlave := exec.Command("gnome-terminal", "-x", "-c","go run /home/student/TTK4145/Project/slave/slave.go -isBackup=false")
 
 	//exec.Command("gnome-terminal", "-x", "go run ~/Documents/TTK4145/Exercise6/backup.go")
 	//startSlave.Start()
-	listenForOrders := make(chan util.Order)
-	sendOrders := make(chan util.Order)
-	go bcast.Transmitter(20010, sendOrders)
-	go bcast.Receiver(20009, listenForOrders)
-	go slave.Slave()
-	go master.HandleOrder(listenForOrders,sendOrders)
-	time.Sleep(60*time.Second)
-	driver.SteerElevator(2)
+	if startMaster {
+		go master.Master(false)
+	} if startMasterBackup{
+		go master.Master(true)
+	} if startSlave {
+		go slave.Slave(false)
+	} if startSlaveBackup {
+		go slave.Slave(true)
+	}
 
 //testing that we are able to steer the elevator and return current floor
 /*
