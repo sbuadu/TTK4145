@@ -2,10 +2,10 @@ package orderManagement
 
 import (
 
-	"../util"
-	"fmt"
-	"math"
-	"time"
+"../util"
+"fmt"
+"math"
+"time"
 )
 
 var orderSlice = make([]util.Order, 0) //slice of orders
@@ -66,12 +66,10 @@ func PrioritizeOrder(order util.Order, orderSlice []util.Order, elevator util.El
 			if  elevator.ElevDirection == 0 && order.FromButton.Floor > orderSlice[i].FromButton.Floor && orderSlice[i].FromButton.Floor > elevator.LastFloor{ //checking of the next orders could go first 
 				index = i 
 			}	else if elevator.ElevDirection == 1 && order.FromButton.Floor < orderSlice[i].FromButton.Floor && orderSlice[i].FromButton.Floor < elevator.LastFloor {
-					index = i 
-				}else {
-					break; 
+				index = i 
 			}
 		}
-
+		
 		if index == -1 {
 			return append([]util.Order{order}, orderSlice[0:]...)
 		}else{
