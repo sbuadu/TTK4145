@@ -4,6 +4,8 @@ import (
 	"time"
 )
 
+var Nslaves = 3
+
 type Direction int
 
 const (
