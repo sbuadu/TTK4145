@@ -14,9 +14,9 @@ import (
 //TODO: make process pair functionality
 
 func SendOrder(order util.Order, sendOrders chan util.Order, orderChanBackup, orderChanMaster, orderChan chan []util.Order) {
-	select {
-	case sendOrders <- order:
-	default:
+	if len(sendOrders) < cap(sendOrders) {
+		sendOrders <- order
+	} else {
 		success := orderManagement.AddOrder(orderChan, order.FromButton.Floor, order.FromButton.TypeOfButton, order.ThisElevator, order.AtTime)
 		if success == 1 {
 			orderSlice := <-orderChan
@@ -56,7 +56,7 @@ func ListenLocalOrders(callback chan time.Time, sendOrders chan util.Order, orde
 		var recent [4][3]int
 		buttons = driver.ListenForButtons()
 		changed, floor, button := CompareMatrix(buttons, recent)
-
+		//fmt.Println(changed)
 		if changed {
 			if button == 0 || button == 1 {
 				order := util.Order{thisElevator, util.Button{floor, button}, time.Now()}
@@ -153,9 +153,11 @@ var thisElevator = util.Elevator{rand.Intn(100), IP, 0, 2}
 func Slave(isBackup bool) {
 
 	driver.InitElevator()
-	orderChan := make(chan []util.Order)
+
+	orderChan := make(chan []util.Order, 10)
 	orderSlice := []util.Order{}
 	orderChan <- orderSlice
+
 	listenForOrders := make(chan util.Order)
 	sendOrders := make(chan util.Order)
 	callback := make(chan time.Time)

@@ -1,7 +1,6 @@
 package orderManagement
 
 import (
-
 	"../util"
 	"fmt"
 	"math"
@@ -56,34 +55,34 @@ func duplicateOrder(order util.Order, orderSlice []util.Order) bool {
 }
 
 func PrioritizeOrder(order util.Order, orderSlice []util.Order, elevator util.Elevator) []util.Order {
-	
+
 	if len(orderSlice) < 1 { //if no orders
 		return append(orderSlice, []util.Order{order}...)
 
-	} else if order.FromButton.TypeOfButton == 3 { //internal order 
+	} else if order.FromButton.TypeOfButton == 3 { //internal order
 		index := -1
 		for i := 0; i < len(orderSlice)-1; i++ {
-			if  elevator.ElevDirection == 0 && order.FromButton.Floor > orderSlice[i].FromButton.Floor && orderSlice[i].FromButton.Floor > elevator.LastFloor{ //checking of the next orders could go first 
-				index = i 
-			}	else if elevator.ElevDirection == 1 && order.FromButton.Floor < orderSlice[i].FromButton.Floor && orderSlice[i].FromButton.Floor < elevator.LastFloor {
-					index = i 
-				}else {
-					break; 
+			if elevator.ElevDirection == 0 && order.FromButton.Floor > orderSlice[i].FromButton.Floor && orderSlice[i].FromButton.Floor > elevator.LastFloor { //checking of the next orders could go first
+				index = i
+			} else if elevator.ElevDirection == 1 && order.FromButton.Floor < orderSlice[i].FromButton.Floor && orderSlice[i].FromButton.Floor < elevator.LastFloor {
+				index = i
+			} else {
+				break
 			}
 		}
 
 		if index == -1 {
 			return append([]util.Order{order}, orderSlice[0:]...)
-		}else{
+		} else {
 			return append(orderSlice[:index+1], append([]util.Order{order}, orderSlice[index+1:]...)...)
 		}
-	}else{ //external order
+	} else { //external order
 		for i := 0; i < len(orderSlice)-1; i++ {
 			// going up
 			if elevator.ElevDirection == 0 && order.FromButton.TypeOfButton == 0 && elevator.LastFloor < order.FromButton.Floor && order.FromButton.Floor < orderSlice[i].FromButton.Floor {
 				return append(orderSlice[:i], append([]util.Order{order}, orderSlice[i:]...)...)
 				//elevator going down
-			} else if  elevator.ElevDirection == 1 && order.FromButton.TypeOfButton == 1 && elevator.LastFloor > order.FromButton.Floor && order.FromButton.Floor > orderSlice[i].FromButton.Floor {
+			} else if elevator.ElevDirection == 1 && order.FromButton.TypeOfButton == 1 && elevator.LastFloor > order.FromButton.Floor && order.FromButton.Floor > orderSlice[i].FromButton.Floor {
 				return append(orderSlice[:i], append([]util.Order{order}, orderSlice[i:]...)...)
 			}
 		}
@@ -91,7 +90,7 @@ func PrioritizeOrder(order util.Order, orderSlice []util.Order, elevator util.El
 	}
 }
 
-func findSuitableElevator(slaves [3]util.Elevator, order util.Order) util.Elevator {
+func FindSuitableElevator(slaves [3]util.Elevator, order util.Order) util.Elevator {
 	elevIndex := 0
 	bestCost := 0
 	for i := 0; i < len(slaves); i++ {
@@ -127,6 +126,6 @@ func calculateCost(elevator util.Elevator, order util.Order) int {
 	}
 }
 
-func sendOrder(){
+func sendOrder() {
 	//TO DO
 }

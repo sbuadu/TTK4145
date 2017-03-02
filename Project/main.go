@@ -2,14 +2,15 @@ package main
 
 import (
 	"./driver"
-	//"fmt"
+	"fmt"
 	//"os/exec"
-	"./slave"
-	"time"
-	"./network/bcast"
 	"./master"
-	"./util"
+	//"./network/bcast"
+	"./slave"
+	//"./util"
+	//"time"
 	//"sync"
+	"flag"
 )
 
 type Direction int
@@ -21,12 +22,16 @@ const (
 )
 
 func main() {
-	//fmt.Println("Initializing Slave")
-	//go slave.Slave()
-	var startMaster bool
-	var startSlave bool
-	var startMasterBackup bool
-	var startSlaveBackup bool
+	/*fmt.Println("Initializing Slave")
+	go slave.Slave(false)
+	for {
+
+	}*/
+	startMaster := flag.Bool("startMaster", false, "a bool")
+	startMasterBackup := flag.Bool("startMasterBackup", false, "a bool")
+	startSlave := flag.Bool("startSlave", false, "a bool")
+	startSlaveBackup := flag.Bool("startSlaveBackup", false, "a bool")
+	flag.Parse()
 	//ifs and shit
 	driver.SteerElevator(2)
 
@@ -34,45 +39,53 @@ func main() {
 
 	//exec.Command("gnome-terminal", "-x", "go run ~/Documents/TTK4145/Exercise6/backup.go")
 	//startSlave.Start()
-	if startMaster {
+	if *startMaster {
+		fmt.Println("starting master")
 		go master.Master(false)
-	} if startMasterBackup{
+	}
+	if *startMasterBackup {
 		go master.Master(true)
-	} if startSlave {
+	}
+	if *startSlave {
+		fmt.Println("Starting slave")
 		go slave.Slave(false)
-	} if startSlaveBackup {
+	}
+	if *startSlaveBackup {
+		fmt.Println("Starting slavebackup")
 		go slave.Slave(true)
 	}
+	for {
 
-//testing that we are able to steer the elevator and return current floor
-/*
-	driver.SteerElevator(driver.Direction(0))
-	time.Sleep(4*time.Second)
-	driver.SteerElevator(driver.Direction(1))
-	time.Sleep(4*time.Second)
-=======
-	time.Sleep(60 * time.Second)
->>>>>>> c6b4b8ae90f8a8f8dce133b8b4134b0f18408640
-	driver.SteerElevator(2)
-
+	}
 	//testing that we are able to steer the elevator and return current floor
 	/*
 	   	driver.SteerElevator(driver.Direction(0))
 	   	time.Sleep(4*time.Second)
 	   	driver.SteerElevator(driver.Direction(1))
 	   	time.Sleep(4*time.Second)
+	   =======
+	   	time.Sleep(60 * time.Second)
+	   >>>>>>> c6b4b8ae90f8a8f8dce133b8b4134b0f18408640
 	   	driver.SteerElevator(2)
-	   	time.Sleep(1*time.Second)
-	   	fmt.Println(driver.GetCurrentFloor())
+
+	   	//testing that we are able to steer the elevator and return current floor
+	   	/*
+	   	   	driver.SteerElevator(driver.Direction(0))
+	   	   	time.Sleep(4*time.Second)
+	   	   	driver.SteerElevator(driver.Direction(1))
+	   	   	time.Sleep(4*time.Second)
+	   	   	driver.SteerElevator(2)
+	   	   	time.Sleep(1*time.Second)
+	   	   	fmt.Println(driver.GetCurrentFloor())
 
 
 
-	   /*
-	   //testing the btn signals
-	   	for{
-	   		fmt.Println(driver.ListenForButtons())
-	   		time.Sleep(2*time.Millisecond)
-	   	}
+	   	   /*
+	   	   //testing the btn signals
+	   	   	for{
+	   	   		fmt.Println(driver.ListenForButtons())
+	   	   		time.Sleep(2*time.Millisecond)
+	   	   	}
 	*/
 
 	/*
