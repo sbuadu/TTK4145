@@ -168,65 +168,72 @@ func Slave(isBackup bool) {
 
 	orderChanMaster := make(chan []util.Order, 1)  //used to send updates on order slice to master
 	stateChanMaster := make(chan util.Elevator, 1) // used to send updates on the elevators state to master
+	firstTry := true
+	for {
+		if isBackup && firstTry {
+			go bcast.Receiver(20010, orderChanBackup, stateChanBackup)
+			tmr := time.NewTimer(20 * time.Second)
 
-	if isBackup {
-		go bcast.Receiver(20010, orderChanBackup, stateChanBackup)
-		tmr := time.NewTimer(5 * time.Second)
+			go func() {
+				<-tmr.C
+				isBackup = false
+				firstTry = true
+				orderChan <- orderSlice
+				fmt.Println("Taking over as slave")
+				spawnBackup := exec.Command("gnome-terminal", "-x", "sh", "-c", "go run /home/student/TTK4145/Project/main.go -startSlaveBackup")
+				spawnBackup.Start()
 
-		go func() {
-			<-tmr.C
-			isBackup = false
-			orderChan <- orderSlice
-			fmt.Println("Taking over as slave")
-			spawnBackup := exec.Command("gnome-terminal", "-x", "sh", "-c", "go run /home/student/TTK4145/Project/main.go -startSlaveBackup")
-			spawnBackup.Start()
-		}()
+			}()
 
-		go func() {
-			for {
-				if isBackup {
-					fmt.Println("Listening to slave")
-					thisElevator = <-stateChanBackup
-					fmt.Println(thisElevator)
-					tmr.Reset(5 * time.Second)
-				} else if !isBackup {
-					return
+			go func() {
+				for {
+					if isBackup {
+						fmt.Println("Listening to slave")
+						thisElevator = <-stateChanBackup
+						fmt.Println(thisElevator)
+						tmr.Reset(20 * time.Second)
+					} else {
+						return
+					}
 				}
-			}
-		}()
+			}()
 
-		go func() {
-			for {
-				if len(orderChanBackup) == cap(orderChanBackup) {
-					orderSlice = <-orderChanBackup
+			go func() {
+				for {
+					if len(orderChanBackup) == cap(orderChanBackup) && isBackup {
+						orderSlice = <-orderChanBackup
+					} else if !isBackup {
+						fmt.Println("Not my problem anymore")
+						return
+					}
 				}
-				if !isBackup {
-					return
+			}()
+			firstTry = false
+		}
+
+		if !isBackup && firstTry {
+			fmt.Println("I'm a slave now")
+			go bcast.Transmitter(20009, sendOrders, orderChanMaster, stateChanMaster)
+			go bcast.Receiver(20009, listenForOrders, callback)
+
+			go bcast.Transmitter(20010, orderChanBackup, stateChanBackup)
+
+			go ListenLocalOrders(callback, sendOrders, orderChan, orderChanMaster, orderChanBackup)
+			go ExecuteOrder(orderChan)
+			go ListenRemoteOrders(listenForOrders, orderChan, orderChanMaster, orderChanBackup)
+
+			go func() {
+				for {
+					fmt.Println("Sending to backup")
+					stateChanBackup <- thisElevator
+					//stateChanMaster <- thisElevator
+					fmt.Println("Sent to backup")
+					time.Sleep(1 * time.Second)
 				}
-			}
-		}()
-	}
-
-	if !isBackup {
-		fmt.Println("I'm a slave now")
-		go bcast.Transmitter(20009, sendOrders, orderChanMaster, stateChanMaster)
-		go bcast.Receiver(20009, listenForOrders, callback)
-
-		go bcast.Transmitter(20010, orderChanBackup, stateChanBackup)
-
-		go ListenLocalOrders(callback, sendOrders, orderChan, orderChanMaster, orderChanBackup)
-		go ExecuteOrder(orderChan)
-		go ListenRemoteOrders(listenForOrders, orderChan, orderChanMaster, orderChanBackup)
-
-		go func() {
-			for {
-				fmt.Println("Sending to backup")
-				stateChanBackup <- thisElevator
-				//stateChanMaster <- thisElevator
-				fmt.Println("Sent to backup")
-				time.Sleep(1 * time.Second)
-			}
-		}()
+			}()
+			firstTry = false
+		}
+		time.Sleep(5 * time.Second)
 	}
 }
 
