@@ -1,35 +1,34 @@
 package main
-import(
+
+import (
 	"../network/network/bcast"
 	"fmt"
 	"time"
 	//"log"
 	//"net"
 	//"strconv"
-	"os/exec"
+	//"os/exec"
 	//"../conn"
 )
 
-type Counter struct{
+type Counter struct {
 	State int
 }
 
-type Message struct{
+type Message struct {
 	Data int
 }
 
+/*
+func takeOverAsMaster(counter Counter) {
+	toBackup := make(chan Message, 1)
 
- func takeOverAsMaster(counter Counter){
- 	toBackup := make(chan Message, 1)
-
- 	//staring a new backup 
+	//staring a new backup
 	spawnBackup := exec.Command("gnome-terminal", "-x", "sh", "-c", "ssh student@129.241.187.161 && Sanntid15 && go run /home/student/Documents/TTK4145/Exercise6/backup.go")
 	spawnBackup.Start()
 
-	
 	port := 20009
-	go bcast.Transmitter(port,"129.241.187.161",toBackup)
-
+	go bcast.Transmitter(port, "129.241.187.161", toBackup)
 
 	for {
 
@@ -37,43 +36,41 @@ type Message struct{
 		msg := Message{counter.State}
 		toBackup <- msg
 		counter.State++
-		time.Sleep(1*time.Second)
+		time.Sleep(1 * time.Second)
 
 	}
 }
-
-
+*/
 var isBackup bool = true
-func main(){
 
-	
-	tmr := time.NewTimer(3*time.Second)
+func main() {
+
+	tmr := time.NewTimer(3 * time.Second)
 	port := 20009
 	fmt.Print("\n\nThe backup is running \n\n")
 	fromMaster := make(chan Message)
-	
+
 	masterCounter := Counter{0}
 
 	go bcast.Receiver(port, fromMaster)
-	
 
 	// if the timer runs out...
-	go func(){
-		<- tmr.C
+	go func() {
+		<-tmr.C
 		isBackup = false
 		fmt.Print("Master seems to be dead, I'm taking over.. ")
 
-				takeOverAsMaster(masterCounter)
+		//takeOverAsMaster(masterCounter)
 	}()
 	for {
-	 	// receiving the current state of the master and printing it 
+		// receiving the current state of the master and printing it
 		if isBackup {
 			msg := <-fromMaster
 			masterCounter.State = msg.Data
-			tmr.Reset(3*time.Second)
+			tmr.Reset(3 * time.Second)
 			fmt.Printf("the received state is %d\n", masterCounter.State)
 
-	} 
+		}
 
-}
+	}
 }
