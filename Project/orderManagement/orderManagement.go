@@ -2,7 +2,7 @@ package orderManagement
 
 import (
 	"../util"
-	"fmt"
+
 	"math"
 	"time"
 )
@@ -32,7 +32,6 @@ func RemoveOrder(order util.Order, orderSlice []util.Order) []util.Order {
 		if orderSlice[i].FromButton.Floor == order.FromButton.Floor && orderSlice[i].FromButton.TypeOfButton == order.FromButton.TypeOfButton {
 
 			orderSlice = append(orderSlice[:i], orderSlice[i+1:]...)
-			fmt.Println("Removing order", order.FromButton.TypeOfButton, order.FromButton.Floor)
 			if len(orderSlice) == 0 {
 				return []util.Order{}
 			}

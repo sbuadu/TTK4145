@@ -101,31 +101,29 @@ func ExecuteOrder(orderChan chan []util.Order) {
 	}
 	for {
 		orderSlice := <-orderChan
-		fmt.Println("ExecuteOrder retrieved orderSlice")
-		fmt.Println("ExecuteOrder orderslice: ", orderSlice)
 
 		if len(orderSlice) > 0 {
-			fmt.Println("ExecuteOrder has orders")
+
 			currentOrder := orderSlice[0]
 			orderChan <- orderSlice
 			floor := currentOrder.FromButton.Floor
 			currentFloor = driver.GetCurrentFloor()
 			if currentFloor == floor {
-				fmt.Println("ExecuteOrder clear order")
+
 				driver.SetDoorLamp(1)
 				orderSlice := <-orderChan
 				orderSlice = orderManagement.RemoveOrder(currentOrder, orderSlice)
 				orderChan <- orderSlice
 				driver.SetButtonLamp(currentOrder.FromButton.Floor, currentOrder.FromButton.TypeOfButton, 0)
 			} else {
-				fmt.Println("ExecuteOrder go to order")
+
 				goToFloor(currentOrder, currentFloor)
 				orderSlice := <-orderChan
 				orderSlice = orderManagement.RemoveOrder(currentOrder, orderSlice)
 				orderChan <- orderSlice
 			}
 		} else {
-			fmt.Println("ExecuteOrder no orders")
+
 			orderChan <- orderSlice
 		}
 		time.Sleep(util.DoorOpenTime)
@@ -191,9 +189,9 @@ func Slave(isBackup bool) {
 			go func() {
 				for {
 					if isBackup {
-						fmt.Println("Listening to slave")
+
 						thisElevator = <-stateChanBackup
-						//		fmt.Println(thisElevator)
+
 						tmr.Reset(5 * time.Second)
 					} else {
 						return
@@ -212,13 +210,8 @@ func Slave(isBackup bool) {
 				for {
 					if len(orderChanBackup) == cap(orderChanBackup) && isBackup {
 						orderSlice = <-orderChanBackup
-						fmt.Print("This is the order slice: ")
-						fmt.Println(orderSlice)
 					}
-					/*else if !isBackup {
-						fmt.Println("Not my problem anymore")
-						return
-					}*/
+
 				}
 			}()
 
@@ -251,7 +244,7 @@ func Slave(isBackup bool) {
 			//updating orderSlice backups
 			go func() {
 				for {
-					fmt.Println("Sending to backup")
+
 					select {
 					case <-newStateChanBackup:
 					default:
@@ -260,13 +253,10 @@ func Slave(isBackup bool) {
 
 					orderSlice = <-orderChan
 					newOrderChanBackup <- orderSlice
-
-					fmt.Print("This is the order slice: ")
-					fmt.Println(orderSlice)
 					orderChan <- orderSlice
 					//stateChanMaster <- thisElevator
 
-					time.Sleep(1 * time.Second)
+					time.Sleep(100 * time.Millisecond)
 
 				}
 			}()
@@ -275,30 +265,3 @@ func Slave(isBackup bool) {
 		time.Sleep(1 * time.Second)
 	}
 }
-
-/*
-					func Test() {
-
-
-						driver.InitElevator()
-	//orderSlice := []util.Order{util.Order{util.Elevator{1, "IP", 0, 0}, util.Button{0, 0}, time.Now()}}
-						orderChan := make(chan []util.Order, 100)
-						orderChan <- []util.Order{}
-	//listenForOrders := make(chan util.Order)
-						sendOrders := make(chan util.Order)
-						callback := make(chan time.Time)
-
-					//	go ListenLocalOrders(callback, sendOrders, orderChan, orderChanMaster, orderChanBackup)
-						orderChan <- []util.Order{}
-						for {
-
-							orderSlice := <-orderChan
-							for i := 0; i < len(orderSlice); i++ {
-								fmt.Println(orderSlice[i].FromButton.Floor)
-			//fmt.Println(len(orderSlice))
-							}
-							orderChan <- orderSlice
-						}
-
-					}
-*/
