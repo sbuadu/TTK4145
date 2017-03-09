@@ -57,7 +57,7 @@ func duplicateOrder(order util.Order, orderSlice []util.Order) bool {
 func PrioritizeOrder(order util.Order, orderSlice []util.Order, elevator util.Elevator) []util.Order {
 
 	if len(orderSlice) < 1 { //if no orders
-		return append(orderSlice, []util.Order{order}...)
+		return append(orderSlice, order)
 
 	} else if order.FromButton.TypeOfButton == 3 { //internal order
 		index := -1
@@ -69,22 +69,24 @@ func PrioritizeOrder(order util.Order, orderSlice []util.Order, elevator util.El
 			}
 		}
 
+		new_item := append(make([]util.Order, 0), order)
 		if index == -1 {
-			return append([]util.Order{order}, orderSlice[0:]...)
+			return append(new_item, orderSlice[0:]...)
 		} else {
-			return append(orderSlice[:index+1], append([]util.Order{order}, orderSlice[index+1:]...)...)
+			return append(orderSlice[:index+1], append(new_item, orderSlice[index+1:]...)...)
 		}
 	} else { //external order
 		for i := 0; i < len(orderSlice)-1; i++ {
 			// going up
+			new_item := append(make([]util.Order, 0), order)
 			if elevator.ElevDirection == 0 && order.FromButton.TypeOfButton == 0 && elevator.LastFloor < order.FromButton.Floor && order.FromButton.Floor < orderSlice[i].FromButton.Floor {
-				return append(orderSlice[:i], append([]util.Order{order}, orderSlice[i:]...)...)
+				return append(orderSlice[:i], append(new_item, orderSlice[i:]...)...)
 				//elevator going down
 			} else if elevator.ElevDirection == 1 && order.FromButton.TypeOfButton == 1 && elevator.LastFloor > order.FromButton.Floor && order.FromButton.Floor > orderSlice[i].FromButton.Floor {
-				return append(orderSlice[:i], append([]util.Order{order}, orderSlice[i:]...)...)
+				return append(orderSlice[:i], append(new_item, orderSlice[i:]...)...)
 			}
 		}
-		return append(orderSlice, []util.Order{order}...)
+		return append(orderSlice, order)
 	}
 }
 

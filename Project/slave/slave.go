@@ -14,33 +14,26 @@ import (
 
 //TODO: make process pair functionality
 
-func SendOrder(order util.Order, sendOrders chan util.Order, orderChanBackup, orderChanMaster, orderChan chan []util.Order) {
+func SendOrder(order util.Order, sendOrders chan util.Order, orderChan chan []util.Order) {
 	if len(sendOrders) < cap(sendOrders) {
 		sendOrders <- order
 	} else {
 		success := orderManagement.AddOrder(orderChan, order.FromButton.Floor, order.FromButton.TypeOfButton, order.ThisElevator, order.AtTime)
 		if success == 1 {
-			orderSlice := <-orderChan
-			orderChanBackup <- orderSlice
-			orderChanMaster <- orderSlice
-			orderChan <- orderSlice
+
 			driver.SetButtonLamp(order.FromButton.Floor, order.FromButton.TypeOfButton, 1)
 		}
 
-		//TODO: callback functionality
 	}
 }
 
-func ListenRemoteOrders(listenForOrders chan util.Order, orderChan, orderChanBackup, orderChanMaster chan []util.Order) {
+func ListenRemoteOrders(listenForOrders chan util.Order, orderChan chan []util.Order) {
 	//TODO: callback
 	for {
 		order := <-listenForOrders
 		success := orderManagement.AddOrder(orderChan, order.FromButton.Floor, order.FromButton.TypeOfButton, order.ThisElevator, order.AtTime)
 		if success == 1 {
-			orderSlice := <-orderChan
-			orderChanBackup <- orderSlice
-			orderChanMaster <- orderSlice
-			orderChan <- orderSlice
+
 			driver.SetButtonLamp(order.FromButton.Floor, order.FromButton.TypeOfButton, 1)
 
 		}
@@ -48,7 +41,7 @@ func ListenRemoteOrders(listenForOrders chan util.Order, orderChan, orderChanBac
 
 }
 
-func ListenLocalOrders(callback chan time.Time, sendOrders chan util.Order, orderChan, orderChanMaster, orderChanBackup chan []util.Order) {
+func ListenLocalOrders(callback chan time.Time, sendOrders chan util.Order, orderChan chan []util.Order) {
 
 	//TODO: check if button is already on
 	var buttons [4][3]int
@@ -61,14 +54,11 @@ func ListenLocalOrders(callback chan time.Time, sendOrders chan util.Order, orde
 		if changed {
 			if button == 0 || button == 1 {
 				order := util.Order{thisElevator, util.Button{floor, button}, time.Now()}
-				go SendOrder(order, sendOrders, orderChanBackup, orderChanMaster, orderChan)
+				go SendOrder(order, sendOrders, orderChan)
 			} else {
 				success := orderManagement.AddOrder(orderChan, floor, button, thisElevator, time.Now())
 				if success == 1 {
-					orderSlice := <-orderChan
-					orderChanBackup <- orderSlice
-					orderChanMaster <- orderSlice
-					orderChan <- orderSlice
+
 					driver.SetButtonLamp(floor, button, 1)
 				}
 			}
@@ -104,30 +94,38 @@ func goToFloor(order util.Order, currentFloor int) {
 }
 
 func ExecuteOrder(orderChan chan []util.Order) {
+
 	currentFloor := driver.GetCurrentFloor()
 	if currentFloor == -1 {
 		currentFloor = 0
 	}
 	for {
 		orderSlice := <-orderChan
+		fmt.Println("ExecuteOrder retrieved orderSlice")
+		fmt.Println("ExecuteOrder orderslice: ", orderSlice)
+
 		if len(orderSlice) > 0 {
+			fmt.Println("ExecuteOrder has orders")
 			currentOrder := orderSlice[0]
 			orderChan <- orderSlice
 			floor := currentOrder.FromButton.Floor
 			currentFloor = driver.GetCurrentFloor()
 			if currentFloor == floor {
+				fmt.Println("ExecuteOrder clear order")
 				driver.SetDoorLamp(1)
 				orderSlice := <-orderChan
 				orderSlice = orderManagement.RemoveOrder(currentOrder, orderSlice)
 				orderChan <- orderSlice
 				driver.SetButtonLamp(currentOrder.FromButton.Floor, currentOrder.FromButton.TypeOfButton, 0)
 			} else {
+				fmt.Println("ExecuteOrder go to order")
 				goToFloor(currentOrder, currentFloor)
 				orderSlice := <-orderChan
 				orderSlice = orderManagement.RemoveOrder(currentOrder, orderSlice)
 				orderChan <- orderSlice
 			}
 		} else {
+			fmt.Println("ExecuteOrder no orders")
 			orderChan <- orderSlice
 		}
 		time.Sleep(util.DoorOpenTime)
@@ -153,45 +151,50 @@ var thisElevator = util.Elevator{rand.Intn(100), IP, 0, 2}
 
 func Slave(isBackup bool) {
 
-	driver.InitElevator()
-
-	orderChan := make(chan []util.Order, 10)
-	orderSlice := []util.Order{}
+	orderChan := make(chan []util.Order, 1)
+	orderSlice := make([]util.Order, 0)
 	orderChan <- orderSlice
 
 	listenForOrders := make(chan util.Order)
 	sendOrders := make(chan util.Order)
 	callback := make(chan time.Time)
 
-	orderChanBackup := make(chan []util.Order, 1)  //used to send updates on order slice to backup
-	stateChanBackup := make(chan util.Elevator, 1) // used to send updates on the elevators state to backup
-
 	orderChanMaster := make(chan []util.Order, 1)  //used to send updates on order slice to master
 	stateChanMaster := make(chan util.Elevator, 1) // used to send updates on the elevators state to master
 	firstTry := true
+
 	for {
 		if isBackup && firstTry {
+			firstTry = false
+			orderChanBackup := make(chan []util.Order, 1)  //used to send updates on order slice to backup
+			stateChanBackup := make(chan util.Elevator, 1) // used to send updates on the elevators state to backup
+
 			go bcast.Receiver(20010, orderChanBackup, stateChanBackup)
-			tmr := time.NewTimer(20 * time.Second)
+			tmr := time.NewTimer(5 * time.Second)
 
 			go func() {
 				<-tmr.C
 				isBackup = false
 				firstTry = true
+				select {
+				case <-orderChan:
+				default:
+				}
 				orderChan <- orderSlice
 				fmt.Println("Taking over as slave")
-				spawnBackup := exec.Command("gnome-terminal", "-x", "sh", "-c", "go run /home/student/TTK4145/Project/main.go -startSlaveBackup")
+				spawnBackup := exec.Command("gnome-terminal", "-x", "sh", "-c", "go run /home/student/Documents/Group55/TTK4145/Project/main.go -startSlaveBackup")
 				spawnBackup.Start()
 
 			}()
 
+			//checking that the slave is alive
 			go func() {
 				for {
 					if isBackup {
 						fmt.Println("Listening to slave")
 						thisElevator = <-stateChanBackup
-						fmt.Println(thisElevator)
-						tmr.Reset(20 * time.Second)
+						//		fmt.Println(thisElevator)
+						tmr.Reset(5 * time.Second)
 					} else {
 						return
 					}
@@ -199,41 +202,77 @@ func Slave(isBackup bool) {
 			}()
 
 			go func() {
+				if driver.GetCurrentFloor() == 3 && thisElevator.ElevDirection == 0 || driver.GetCurrentFloor() == 0 && thisElevator.ElevDirection == 1 {
+					driver.SteerElevator(2)
+				}
+			}()
+
+			//updating the orderSlice backup
+			go func() {
 				for {
 					if len(orderChanBackup) == cap(orderChanBackup) && isBackup {
 						orderSlice = <-orderChanBackup
-					} else if !isBackup {
+						fmt.Print("This is the order slice: ")
+						fmt.Println(orderSlice)
+					}
+					/*else if !isBackup {
 						fmt.Println("Not my problem anymore")
 						return
-					}
+					}*/
 				}
 			}()
-			firstTry = false
+
 		}
 
 		if !isBackup && firstTry {
+			firstTry = false
+			driver.InitElevator()
+			orderSlice := <-orderChan
+			orderChan <- orderSlice
+			for i := 0; i < len(orderSlice); i++ {
+
+				driver.SetButtonLamp(orderSlice[i].FromButton.Floor, orderSlice[i].FromButton.TypeOfButton, 1)
+			}
+
 			fmt.Println("I'm a slave now")
+			newStateChanBackup := make(chan util.Elevator, 1)
+			newOrderChanBackup := make(chan []util.Order, 1)
+
 			go bcast.Transmitter(20009, sendOrders, orderChanMaster, stateChanMaster)
 			go bcast.Receiver(20009, listenForOrders, callback)
 
-			go bcast.Transmitter(20010, orderChanBackup, stateChanBackup)
+			go bcast.Transmitter(20010, newOrderChanBackup, newStateChanBackup)
 
-			go ListenLocalOrders(callback, sendOrders, orderChan, orderChanMaster, orderChanBackup)
+			go ListenLocalOrders(callback, sendOrders, orderChan)
 			go ExecuteOrder(orderChan)
-			go ListenRemoteOrders(listenForOrders, orderChan, orderChanMaster, orderChanBackup)
+			go ListenRemoteOrders(listenForOrders, orderChan)
 
+			//notifying I'm alive
+			//updating orderSlice backups
 			go func() {
 				for {
 					fmt.Println("Sending to backup")
-					stateChanBackup <- thisElevator
+					select {
+					case <-newStateChanBackup:
+					default:
+					}
+					newStateChanBackup <- thisElevator
+
+					orderSlice = <-orderChan
+					newOrderChanBackup <- orderSlice
+
+					fmt.Print("This is the order slice: ")
+					fmt.Println(orderSlice)
+					orderChan <- orderSlice
 					//stateChanMaster <- thisElevator
-					fmt.Println("Sent to backup")
+
 					time.Sleep(1 * time.Second)
+
 				}
 			}()
-			firstTry = false
+
 		}
-		time.Sleep(5 * time.Second)
+		time.Sleep(1 * time.Second)
 	}
 }
 
