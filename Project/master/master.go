@@ -11,7 +11,7 @@ import (
 
 var slaves [util.Nslaves]util.Elevator
 var orders [util.Nslaves][]util.Order
-var slaveIPs = [2]string{"129.241.187.161", "129.241.187.156"}
+var slaveIPs = [util.Nslaves]string{"129.241.187.161", "129.241.187.156","255.255.255.255"}
 var slaveAlive [util.Nslaves]bool
 
 func InitSlave(IP string) {
@@ -19,10 +19,6 @@ func InitSlave(IP string) {
 		spawnSlave := exec.Command("gnome-terminal", "-x", "sh", "-c", "nohup ssh student@", IP, "go run /home/student/Documents/TTK4145/Exercise6/backup.go")
 		spawnSlave.Start()
 	}
-	//TODO: This
-	//start elevator from command line
-	//add to list of elevators
-	//update slaveAlive
 }
 
 func sendOrder(order util.Order, sendOrders chan util.Order) {
@@ -33,9 +29,8 @@ func sendOrder(order util.Order, sendOrders chan util.Order) {
 func distributeOrder(listenForOrders chan util.Order, sendOrders chan util.Order) {
 	for {
 		order := <-listenForOrders
-		//fmt.Println("Master Received order", order)
-		//sendTo := orderManagement.FindSuitableElevator(slaves, order)
-		//TODO: populate slavcelist for this to work
+		fmt.Println("Master Received order", order)
+		sendTo := orderManagement.FindSuitableElevator(slaves, order)
 		go sendOrder(order, sendOrders)
 	}
 }
@@ -88,7 +83,7 @@ func Master(isBackup bool) {
 
 
 		for c := 0; c < util.Nslaves; c++ {
-			go bcast.Transmitter(20009, sendOrders)
+			go bcast.Transmitter(20009, sendOrderChannels[c])
 			go bcast.Receiver(20009, listenForOrders, listenForSlaves, listenForOrderSlice)
 			//should all these channels have different names??
 		}
