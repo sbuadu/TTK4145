@@ -1,16 +1,16 @@
 package main
 
 import (
-	"./driver"
+//	"./driver"
 	"fmt"
 	//"os/exec"
-	"./master"
+	//"./master"
 	//"./network/bcast"
 	"./slave"
 	//"./util"
 	//"time"
 	//"sync"
-	"flag"
+//	"flag"
 )
 
 type Direction int
@@ -22,11 +22,15 @@ const (
 )
 
 func main() {
-	/*fmt.Println("Initializing Slave")
-	go slave.Slave(false)
-	for {
+	fmt.Println("Testing the order prioritizing")
+	go slave.Test()
+	for{
+		
+	}
 
-	}*/
+
+/*
+
 	startMaster := flag.Bool("startMaster", false, "a bool")
 	startMasterBackup := flag.Bool("startMasterBackup", false, "a bool")
 	startSlave := flag.Bool("startSlave", false, "a bool")

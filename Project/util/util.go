@@ -5,6 +5,7 @@ import (
 )
 
 const Nslaves = 3
+const Nfloors = 4
 
 type Direction int
 

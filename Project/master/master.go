@@ -46,6 +46,7 @@ func Master(isBackup bool) {
 	var orderSliceChannel [util.Nslaves]chan []util.Order
 	var sendOrderChannels [util.Nslaves]chan util.Order
 	var slaveOrderSlices [util.Nslaves][]util.Order
+	
 	for j := 0; j < util.Nslaves; j++ {
 		orderChannels[j] = make(chan util.Order)
 		statusChannels[j] = make(chan util.Elevator)
@@ -75,16 +76,23 @@ func Master(isBackup bool) {
 
 	if !isBackup && firstTry {
 		myIP, _ := localip.LocalIP()
+
+		//this should only be done once, right ? So first try should not be set to true when a backup becomes master..
 		for i := 0; i < util.Nslaves; i++ {
 			if myIP != slaveIPs[i] {
 				InitSlave(slaveIPs[i])
 			}
 		}
 		//start backup master on remote pc, take first in list that is not itself
+
+
+
 		for c := 0; c < util.Nslaves; c++ {
 			go bcast.Transmitter(20009, sendOrders)
 			go bcast.Receiver(20009, listenForOrders, listenForSlaves, listenForOrderSlice)
+			//should all these channels have different names??
 		}
+		
 		go distributeOrder(listenForOrders, sendOrders)
 
 		//updating info from slave
