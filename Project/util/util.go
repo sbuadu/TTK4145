@@ -19,6 +19,8 @@ type Order struct {
 	ThisElevator Elevator
 	FromButton   Button
 	AtTime       time.Time
+	Completed 	 bool
+
 }
 
 type Elevator struct {
