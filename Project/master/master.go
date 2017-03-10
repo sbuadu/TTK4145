@@ -1,13 +1,13 @@
 package master
 
 import (
-	"../network/bcast"
-	"../network/localip"
-	"../util"
-	"os/exec"
-	"time"
-	"fmt"
-	"../orderManagement"
+"../network/bcast"
+"../network/localip"
+"../util"
+"os/exec"
+"time"
+"fmt"
+"../orderManagement"
 )
 
 var slaves [util.Nslaves]util.Elevator
@@ -15,8 +15,8 @@ var slaveIPs = [util.Nslaves]string{"129.241.187.161", "129.241.187.156","255.25
 var slaveAlive [util.Nslaves]bool
 
 func InitSlave(IP string) {
-		spawnSlave := exec.Command("gnome-terminal", "-x", "sh", "-c", "nohup ssh student@", IP, "go run /home/student/Documents/Group55/TTK4145/Project/main.go -startSlave")
-		spawnSlave.Start()
+	spawnSlave := exec.Command("gnome-terminal", "-x", "sh", "-c", "nohup ssh student@", IP, "go run /home/student/Documents/Group55/TTK4145/Project/main.go -startSlave")
+	spawnSlave.Start()
 }
 
 func sendOrder(order util.Order, sendOrders chan util.Order) {
@@ -42,8 +42,6 @@ func distributeOrder(listenForOrders, sendOrders chan util.Order, orderChan chan
 			}
 		} else {
 			order.ThisElevator = orderManagement.FindSuitableElevator(slaves, order)
-			//send order to all slaves
-			//TODO: populate slavcelist for this to work
 			go sendOrder(order, sendOrders)
 		}
 	}
@@ -83,52 +81,66 @@ func Master(isBackup bool) {
 				slaveAlive =<-slaveAliveFromMaster 
 				tmr.Reset(5 * time.Second)
 			}
-		}()
-		go func () {
-			<-tmr.C
-			isBackup = false
-			firstTry = true
-			select{
-			case <- slavesChan:
-			default:
+			}()
+			go func () {
+				<-tmr.C
+				isBackup = false
+				firstTry = true
+				select{
+				case <- slavesChan:
+				default:
+				}
+				select {
+				case <- orderChan:
+				default:
+				}
+				select {
+				case <- slaveAliveChan:
+				default:
+				}
+				slavesChan <-slaves
+				orderChan <- orders
+				slaveAliveChan <- slaveAlive
+				myIP, _ := localip.LocalIP()
+				for i:=0;i<len(slaveIPs);i++{
+					if slaveIPs[i] != myIP && slaveAlive[i] {
+						spawnMasterBackup := exec.Command("gnome-terminal", "-x", "sh", "-c", "nohup ssh student@", slaveIPs[i], "go run /home/student/Documents/Group55/TTK4145/Project/main.go -startMasterBackup")
+						spawnMasterBackup.Start()
+						return
+					}
+				}
+				}()
 			}
-			select {
-			case <- orderChan:
-			default:
-			}
-			select {
-			case <- slaveAliveChan:
-			default:
-			}
-			slavesChan <-slaves
-			orderChan <- orders
-			slaveAliveChan <- slaveAlive
-			myIP, _ := localip.LocalIP()
-			for i:=0;i<len(slaveIPs);i++{
-				if slaveIPs[i] != myIP && slaveAlive[i] {
-					spawnMasterBackup := exec.Command("gnome-terminal", "-x", "sh", "-c", "nohup ssh student@", slaveIPs[i], "go run /home/student/Documents/Group55/TTK4145/Project/main.go -startMasterBackup")
-					spawnMasterBackup.Start()
-					return
+
+			if !isBackup && firstTry {
+				firstTry = false
+				myIP, _ := localip.LocalIP()
+
+
+			if  slaves[0].IP == ""{
+				for i := 0; i < util.Nslaves; i++ {
+					if myIP != slaveIPs[i] {
+						InitSlave(slaveIPs[i])
+						slaves = <-slavesChan
+						slaves[i] = util.Elevator{slaveIPs[i],0,2}
+						slavesChan <- slaves
+						slaveAlive =<-slaveAliveChan
+						slaveAlive[i] = true
+						slaveAliveChan <- slaveAlive
+					}else{
+
+						spawnBackup := exec.Command("gnome-terminal", "-x", "sh", "-c", "go run /home/student/Documents/Group55/TTK4145/Project/main.go -startSlave")
+						spawnBackup.Start()
+						slaves = <-slavesChan
+						slaves[i] = util.Elevator{slaveIPs[i],0,2}
+						slavesChan <- slaves
+						slaveAlive =<-slaveAliveChan
+						slaveAlive[i] = true
+						slaveAliveChan <- slaveAlive
+					}
 				}
 			}
-		}()
-	}
-
-	if !isBackup && firstTry {
-		myIP, _ := localip.LocalIP()
-
-		//this should only be done once, right ? So first try should not be set to true when a backup becomes master..
-		for i := 0; i < util.Nslaves; i++ {
-			if myIP != slaveIPs[i] {
-				InitSlave(slaveIPs[i])
-				slaves = <-slavesChan
-				slaves[i] = util.Elevator{slaveIPs[i],0,2}
-				slavesChan <- slaves
-				slaveAlive =<-slaveAliveChan
-				slaveAlive[i] = true
-				slaveAliveChan <- slaveAlive
-			}
-		}
+		
 
 		//start backup master on remote pc, take first in list that is not itself
 		for i:=0;i<len(slaveIPs);i++{
@@ -162,14 +174,14 @@ func Master(isBackup bool) {
 
 				for i:=0;i<util.Nslaves;i++{
 					if status.IP == slaveIPs[i] {
-						 slaves=<-slavesChan
+						slaves=<-slavesChan
 						slaves[i] = status
 						slavesChan <- slaves
 					}
 				}
 			}
-		}()
+			}()
+
+		}
 
 	}
-
-}
