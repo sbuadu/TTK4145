@@ -15,14 +15,15 @@ var slaveIPs = [util.Nslaves]string{"129.241.187.161", "129.241.187.156","255.25
 var slaveAlive [util.Nslaves]bool
 
 func InitSlave(IP string) {
-	for i := 0; i < len(slaveIPs); i++ {
 		spawnSlave := exec.Command("gnome-terminal", "-x", "sh", "-c", "nohup ssh student@", IP, "go run /home/student/Documents/TTK4145/Exercise6/backup.go")
 		spawnSlave.Start()
-	}
 }
 
 func sendOrder(order util.Order, sendOrders chan util.Order) {
-	sendOrders <- order
+	for i :=0; i<3; i++{
+		sendOrders <- order
+		time.Sleep(1*time.Second)
+	}
 	//TODO: callback functionality
 }
 
@@ -42,14 +43,13 @@ func Master(isBackup bool) {
 	var orderChannels [util.Nslaves]chan util.Order
 	var statusChannels [util.Nslaves]chan util.Elevator
 	var orderSliceChannel [util.Nslaves]chan []util.Order
-	var sendOrderChannels [util.Nslaves]chan util.Order
+	var sendOrder = make(chan util.Order)
 	var slaveOrderSlices [util.Nslaves][]util.Order
 	
 	for j := 0; j < util.Nslaves; j++ {
 		orderChannels[j] = make(chan util.Order)
 		statusChannels[j] = make(chan util.Elevator)
 		orderSliceChannel[j] = make(chan []util.Order)
-		sendOrderChannels[j] = make(chan util.Order)
 		slaveOrderSlices[j] = make([]util.Order, 0)
 	}
 	firstTry := true
@@ -79,6 +79,7 @@ func Master(isBackup bool) {
 		for i := 0; i < util.Nslaves; i++ {
 			if myIP != slaveIPs[i] {
 				InitSlave(slaveIPs[i])
+				slaves[i] = util.Elevator{slaveIPs[i],0,2}
 			}
 		}
 		//start backup master on remote pc, take first in list that is not itself
