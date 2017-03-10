@@ -24,7 +24,6 @@ type Order struct {
 }
 
 type Elevator struct {
-	ID            int
 	IP            string
 	LastFloor     int
 	ElevDirection Direction

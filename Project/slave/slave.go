@@ -167,7 +167,7 @@ func CompareMatrix(newMatrix, oldMatrix [util.Nfloors][util.Nslaves]int) (change
 }
 
 var IP, _ = localip.LocalIP()
-var thisElevator = util.Elevator{rand.Intn(100), IP, 0, 2}
+var thisElevator = util.Elevator{IP, 0, 2}
 
 func Slave(isBackup bool) {
 
@@ -282,6 +282,8 @@ func Slave(isBackup bool) {
 
 								}
 								}()
+								spawnBackup := exec.Command("gnome-terminal", "-x", "sh", "-c", "go run /home/student/Documents/Group55/TTK4145/Project/main.go -startSlaveBackup")
+								spawnBackup.Start()
 
 							}
 							time.Sleep(1 * time.Second)
