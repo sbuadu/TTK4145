@@ -35,6 +35,8 @@ func distributeOrder(listenForOrders chan util.Order, sendOrders chan util.Order
 		order := <-listenForOrders
 		//fmt.Println("Master Received order", order)
 		//sendTo := orderManagement.FindSuitableElevator(slaves, order)
+		//change order.ThisElevator to sendTo
+		//send order to all slaves
 		//TODO: populate slavcelist for this to work
 		go sendOrder(order, sendOrders)
 	}

@@ -13,52 +13,72 @@ import (
 )
 
 
-func SendOrder(order util.Order, sendOrders chan util.Order, orderChan chan []util.Order) {
+func SendOrder(order util.Order, sendOrders chan util.Order, orderChan , otherOrderChan chan []util.Order) {
 	if len(sendOrders) < cap(sendOrders) {
 		sendOrders <- order
-	} else {
-		success := orderManagement.AddOrder(orderChan, order.FromButton.Floor, order.FromButton.TypeOfButton, order.ThisElevator, order.AtTime)
+	} else if !order.Completed {
+		success := orderManagement.AddOrder(orderChan, otherOrderChan, order.FromButton.Floor, order.FromButton.TypeOfButton, order.ThisElevator, order.AtTime)
 		if success == 1 {
-
 			driver.SetButtonLamp(order.FromButton.Floor, order.FromButton.TypeOfButton, 1)
-		}
 
+		}
 	}
 }
 
-func ListenRemoteOrders(listenForOrders chan util.Order, orderChan chan []util.Order) {
+func ListenRemoteOrders(listenForOrders chan util.Order, orderChan, otherOrderChan chan []util.Order) {
 	//TODO: callback
 
-	//should have a boolean here to check if this is to be added inn orderSlice, or if button should just be lit as in another elevator will complete the order.. 
-
 	for {
-		order := <-listenForOrders
-		success := orderManagement.AddOrder(orderChan, order.FromButton.Floor, order.FromButton.TypeOfButton, order.ThisElevator, order.AtTime)
-		if success == 1 {
 
-			driver.SetButtonLamp(order.FromButton.Floor, order.FromButton.TypeOfButton, 1)
+		order := <-listenForOrders
+		if order.ThisElevator.IP == thisElevator.IP { //the elevator should complete the order itself
+
+			if !order.Completed{ 	//order to be completed
+
+				success := orderManagement.AddOrder(orderChan, otherOrderChan, order.FromButton.Floor, order.FromButton.TypeOfButton, order.ThisElevator, order.AtTime)
+				if success == 1 {
+
+					driver.SetButtonLamp(order.FromButton.Floor, order.FromButton.TypeOfButton, 1)
+				}
+			}
+
+}else{ // another elevator will complete the order
+	otherOrders := <- otherOrderChan
+
+			if !order.Completed{ 	//order to be completed
+				otherOrders = append(otherOrders, order)
+				driver.SetButtonLamp(order.FromButton.Floor, order.FromButton.TypeOfButton, 1)
+
+			}else{ // order completed
+
+				otherOrders = orderManagement.RemoveOrder(order, otherOrders)
+				driver.SetButtonLamp(order.FromButton.Floor, order.FromButton.TypeOfButton, 0)
+
+			}
+			otherOrderChan <- otherOrders
+
 
 		}
-	}
 
+	}
 }
 
-func ListenLocalOrders(callback chan time.Time, sendOrders chan util.Order, orderChan chan []util.Order) {
+func ListenLocalOrders(callback chan time.Time, sendOrders chan util.Order, orderChan, otherOrderChan chan []util.Order) {
 
 
 	var buttons [util.Nfloors][util.Nslaves]int
 	for {
-		
+
 		var recent [util.Nfloors][util.Nslaves]int
 		buttons = driver.ListenForButtons()
 		changed, floor, button := CompareMatrix(buttons, recent)
-	
+
 		if changed {
 			if button == 0 || button == 1 { //external order
-				order := util.Order{thisElevator, util.Button{floor, button}, time.Now()}
-				go SendOrder(order, sendOrders, orderChan)
+				order := util.Order{thisElevator, util.Button{floor, button}, time.Now(), false}
+				go SendOrder(order, sendOrders, orderChan, otherOrderChan)
 			} else { //internal order
-				success := orderManagement.AddOrder(orderChan, floor, button, thisElevator, time.Now())
+				success := orderManagement.AddOrder(orderChan, otherOrderChan, floor, button, thisElevator, time.Now())
 				if success == 1 {
 
 					driver.SetButtonLamp(floor, button, 1)
@@ -95,7 +115,7 @@ func goToFloor(order util.Order, currentFloor int) {
 	driver.SetDoorLamp(1)
 }
 
-func ExecuteOrder(orderChan chan []util.Order) {
+func ExecuteOrder(orderChan , otherOrderChan chan []util.Order, sendOrders chan util.Order) {
 
 	currentFloor := driver.GetCurrentFloor()
 	if currentFloor == -1 {
@@ -113,17 +133,17 @@ func ExecuteOrder(orderChan chan []util.Order) {
 			if currentFloor == floor {
 
 				driver.SetDoorLamp(1)
-				orderSlice := <-orderChan
-				orderSlice = orderManagement.RemoveOrder(currentOrder, orderSlice)
-				orderChan <- orderSlice
 				driver.SetButtonLamp(currentOrder.FromButton.Floor, currentOrder.FromButton.TypeOfButton, 0)
 			} else {
 
 				goToFloor(currentOrder, currentFloor)
-				orderSlice := <-orderChan
-				orderSlice = orderManagement.RemoveOrder(currentOrder, orderSlice)
-				orderChan <- orderSlice
+				
 			}
+			orderSlice := <-orderChan
+			orderSlice = orderManagement.RemoveOrder(currentOrder, orderSlice)
+			orderChan <- orderSlice
+			currentOrder.Completed = true
+			SendOrder(currentOrder, sendOrders, orderChan , otherOrderChan)
 		} else {
 
 			orderChan <- orderSlice
@@ -153,7 +173,11 @@ func Slave(isBackup bool) {
 
 	orderChan := make(chan []util.Order, 1)
 	orderSlice := make([]util.Order, 0)
+	otherOrderChan := make(chan []util.Order, 1)
+	otherOrders := make([]util.Order, 0)
 	orderChan <- orderSlice
+	otherOrderChan <- otherOrders
+
 
 	listenForOrders := make(chan util.Order)
 	sendOrders := make(chan util.Order)
@@ -213,54 +237,53 @@ func Slave(isBackup bool) {
 								if len(orderChanBackup) == cap(orderChanBackup) && isBackup {
 									orderSlice = <-orderChanBackup
 								}
-
 							}
 							}()
 
-		}
+						}
 
-		if !isBackup && firstTry {
-			firstTry = false
-			driver.InitElevator()
-			orderSlice := <-orderChan
-			orderChan <- orderSlice
-			for i := 0; i < len(orderSlice); i++ {
-				driver.SetButtonLamp(orderSlice[i].FromButton.Floor, orderSlice[i].FromButton.TypeOfButton, 1)
-			}
+						if !isBackup && firstTry {
+							firstTry = false
+							driver.InitElevator()
+							orderSlice := <-orderChan
+							orderChan <- orderSlice
+							for i := 0; i < len(orderSlice); i++ {
+								driver.SetButtonLamp(orderSlice[i].FromButton.Floor, orderSlice[i].FromButton.TypeOfButton, 1)
+							}
 
-			fmt.Println("I'm a slave now")
-			newStateChanBackup := make(chan util.Elevator, 1)
-			newOrderChanBackup := make(chan []util.Order, 1)
+							fmt.Println("I'm a slave now")
+							newStateChanBackup := make(chan util.Elevator, 1)
+							newOrderChanBackup := make(chan []util.Order, 1)
 
-			go bcast.Transmitter(20009, sendOrders, orderChanMaster, stateChanMaster)
-			go bcast.Receiver(20009, listenForOrders, callback)
-			go bcast.Transmitter(20010, newOrderChanBackup, newStateChanBackup)
+							go bcast.Transmitter(20009, sendOrders, orderChanMaster, stateChanMaster)
+							go bcast.Receiver(20009, listenForOrders, callback)
+							go bcast.Transmitter(20010, newOrderChanBackup, newStateChanBackup)
 
-			go ListenLocalOrders(callback, sendOrders, orderChan)
-			go ExecuteOrder(orderChan)
-			go ListenRemoteOrders(listenForOrders, orderChan)
+							go ListenLocalOrders(callback, sendOrders, orderChan, otherOrderChan)
+							go ExecuteOrder(orderChan, otherOrderChan, sendOrders)
+							go ListenRemoteOrders(listenForOrders, orderChan, otherOrderChan)
 
 			//notifying I'm alive
 			//updating orderSlice backups
-			go func() {
-				for {
-					select {
-						case <-newStateChanBackup:
-							default:
-					}
-					newStateChanBackup <- thisElevator
+							go func() {
+								for {
+									select {
+									case <-newStateChanBackup:
+									default:
+									}
+									newStateChanBackup <- thisElevator
 
-					orderSlice = <-orderChan
-					newOrderChanBackup <- orderSlice
-					orderChan <- orderSlice
+									orderSlice = <-orderChan
+									newOrderChanBackup <- orderSlice
+									orderChan <- orderSlice
 					//stateChanMaster <- thisElevator
 
-					time.Sleep(100 * time.Millisecond)
+									time.Sleep(100 * time.Millisecond)
 
-				}
-			}()
+								}
+								}()
 
-		}
-		time.Sleep(1 * time.Second)
-	}
-}
+							}
+							time.Sleep(1 * time.Second)
+						}
+					}
