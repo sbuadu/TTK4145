@@ -184,17 +184,23 @@ var thisElevator = util.Elevator{IP, 0, 2}
 
 func SlaveLoop(isBackup bool) {
 
-	orderChan := make(chan []util.Order, 1)
 	orderSlice := make([]util.Order, 0)
-	otherOrderChan := make(chan []util.Order, 1)
 	otherOrders := make([]util.Order, 0)
+
+	//local process channels
+	orderChan := make(chan []util.Order, 1)
+	otherOrderChan := make(chan []util.Order, 1)
+
+	//channels for communication with master 
+	listenForOrders := make(chan util.Order)
+	sendOrders := make(chan util.Order)
+	callback := make(chan time.Time)
+
+
 	orderChan <- orderSlice
 	otherOrderChan <- otherOrders
 
 
-	listenForOrders := make(chan util.Order)
-	sendOrders := make(chan util.Order)
-	callback := make(chan time.Time)
 
 	firstTry := true
 
