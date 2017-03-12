@@ -90,7 +90,7 @@ func PrioritizeOrder(order util.Order, orderSlice []util.Order, elevator util.El
 	}
 }
 
-func FindSuitableElevator(slaves [3]util.Elevator, order util.Order) util.Elevator {
+func FindSuitableElevator(slaves []util.Elevator, order util.Order) util.Elevator {
 	elevIndex := 0
 	bestCost := 0
 	for i := 0; i < len(slaves); i++ {

@@ -24,7 +24,6 @@ func sendOrder(order util.Order, sendOrders chan util.Order) {
 		sendOrders <- order
 		time.Sleep(1*time.Second)
 	}
-	//TODO: callback functionality
 }
 
 func distributeOrder(listenForOrders, sendOrders chan util.Order, orderChan chan [util.Nslaves][]util.Order) {
@@ -41,7 +40,13 @@ func distributeOrder(listenForOrders, sendOrders chan util.Order, orderChan chan
 				}
 			}
 		} else {
-			order.ThisElevator = orderManagement.FindSuitableElevator(slaves, order)
+			var workingSlaves = make([]util.Elevator,0)
+			for i := 0; i<util.Nslaves; i++{
+				if slaveAlive[i]{
+					workingSlaves = append(workingSlaves, slaves[i])
+				}
+			}	
+			order.ThisElevator = orderManagement.FindSuitableElevator(workingSlaves, order)
 			go sendOrder(order, sendOrders)
 		}
 	}
@@ -155,7 +160,7 @@ func Master(isBackup bool) {
 		//Set up communication
 		go bcast.Transmitter(20009, sendOrder)
 		go bcast.Receiver(20009, orderChannel, orderSliceChannel, statusChannel)
-			//should all these channels have different names??
+			
 		go distributeOrder(orderChannel, sendOrder, orderChan)
 		go bcast.Transmitter(20011,orderBackupChan, slavesBackupChan)
 		go func() {
@@ -180,6 +185,7 @@ func Master(isBackup bool) {
 							orders =<-orderChan
 							orders[i] = orderSlice
 							orderChan <- orders
+
 						}
 					}
 				}
@@ -190,6 +196,7 @@ func Master(isBackup bool) {
 						slaves=<-slavesChan
 						slaves[i] = status
 						slavesChan <- slaves
+
 					}
 				}
 			}
