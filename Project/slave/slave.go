@@ -44,14 +44,13 @@ func SendOrder(order util.Order, sendOrders chan util.Order, orderChan , otherOr
 	
 //must check if light is lit if another elevator is taking the order
 func ListenRemoteOrders(listenForOrders chan util.Order, orderChan, otherOrderChan chan []util.Order) {
-	//TODO: callback
 
 	for {
 
 		order := <-listenForOrders
 		if order.ThisElevator.IP == thisElevator.IP { //the elevator should complete the order itself
 
-			if !order.Completed{ 	//order to be completed
+			if !order.Completed{ 
 
 				success := orderManagement.AddOrder(orderChan, otherOrderChan, order.FromButton.Floor, order.FromButton.TypeOfButton, order.ThisElevator, order.AtTime)
 				if success == 1 {
@@ -60,19 +59,20 @@ func ListenRemoteOrders(listenForOrders chan util.Order, orderChan, otherOrderCh
 				}
 			}
 
-}else{ // another elevator will complete the order
-	otherOrders := <- otherOrderChan
+		}else{ // another elevator will complete the order
+			otherOrders := <- otherOrderChan
 
-			if !order.Completed{ 	//order to be completed
+			if !order.Completed{ 
 				otherOrders = append(otherOrders, order)
 				driver.SetButtonLamp(order.FromButton.Floor, order.FromButton.TypeOfButton, 1)
 
-			}else{ // order completed
+			}else{
 
 				otherOrders = orderManagement.RemoveOrder(order, otherOrders)
 				driver.SetButtonLamp(order.FromButton.Floor, order.FromButton.TypeOfButton, 0)
 
 			}
+
 			otherOrderChan <- otherOrders
 
 
@@ -81,7 +81,6 @@ func ListenRemoteOrders(listenForOrders chan util.Order, orderChan, otherOrderCh
 	}
 }
 
-//see if functionality for adding order urself if network is lost should be here or elsewhere..
 func ListenLocalOrders(sendOrders chan util.Order, orderChan, otherOrderChan chan []util.Order, callback chan time.Time) {
 
 	var buttons [util.Nfloors][util.Nbuttons]int
@@ -131,7 +130,7 @@ func goToFloor(order util.Order, currentFloor int) {
 
 
 //tested: works
-func ExecuteOrder(orderChan , otherOrderChan chan []util.Order, sendOrders chan util.Order, callback chan time.Time) {
+func ExecuteOrder(sendOrders chan util.Order, orderChan , otherOrderChan chan []util.Order, callback chan time.Time) {
 
 	currentFloor := driver.GetCurrentFloor()
 	if currentFloor == -1 {
@@ -183,7 +182,7 @@ func CompareMatrix(newMatrix, oldMatrix [util.Nfloors][util.Nbuttons]int) (chang
 var IP, _ = localip.LocalIP()
 var thisElevator = util.Elevator{IP, 0, 2}
 
-func Slave(isBackup bool) {
+func SlaveLoop(isBackup bool) {
 
 	orderChan := make(chan []util.Order, 1)
 	orderSlice := make([]util.Order, 0)
@@ -274,11 +273,11 @@ func Slave(isBackup bool) {
 			go bcast.Transmitter( myIP,20010, newOrderChanBackup, newStateChanBackup)
 
 			go ListenLocalOrders(sendOrders, orderChan, otherOrderChan, callback)
-			go ExecuteOrder(orderChan, otherOrderChan, sendOrders, callback)
+			go ExecuteOrder(sendOrders, orderChan, otherOrderChan,  callback)
 			go ListenRemoteOrders(listenForOrders, orderChan, otherOrderChan)
 
-//notifying I'm alive
-//updating orderSlice backups
+			//notifying I'm alive
+			//updating orderSlice backups
 			go func() {
 				for {
 					select {

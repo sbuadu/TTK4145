@@ -10,8 +10,8 @@ var orderSlice = make([]util.Order, 0) //slice of orders
 
 // 1 if success, 0 if duplicate order
 func AddOrder(orderChan, otherOrderChan chan []util.Order, floor, button int, elevator util.Elevator, atTime time.Time) int {
+	
 	order := util.Order{elevator, util.Button{floor, button}, atTime, false}
-
 	orderSlice := <-orderChan
 	otherOrders:= <-otherOrderChan
 
@@ -20,7 +20,6 @@ func AddOrder(orderChan, otherOrderChan chan []util.Order, floor, button int, el
 		otherOrderChan <- otherOrders
 		return 0
 	} else {
-
 		orderSlice = PrioritizeOrder(order, orderSlice, elevator)
 		orderChan <- orderSlice
 		otherOrderChan <- otherOrders
@@ -90,7 +89,7 @@ func PrioritizeOrder(order util.Order, orderSlice []util.Order, elevator util.El
 	}
 }
 
-func FindSuitableElevator(slaves []util.Elevator, order util.Order) util.Elevator {
+func FindSuitableElevator(order util.Order, slaves []util.Elevator) util.Elevator {
 	elevIndex := 0
 	bestCost := 0
 	if order.FromButton.TypeOfButton == 2{
@@ -98,7 +97,7 @@ func FindSuitableElevator(slaves []util.Elevator, order util.Order) util.Elevato
 	}
 
 	for i := 0; i < len(slaves); i++ {
-		cost := calculateCost(slaves[i], order)
+		cost := calculateCost(order, slaves[i])
 		if cost > bestCost {
 			elevIndex = i
 			bestCost = cost
@@ -110,7 +109,7 @@ func FindSuitableElevator(slaves []util.Elevator, order util.Order) util.Elevato
 
 
 //the elevator with the highest cost value should do the order 
-func calculateCost(elevator util.Elevator, order util.Order) int {
+func calculateCost(order util.Order, elevator util.Elevator) int {
 
 	var distance = int(math.Abs(float64(elevator.LastFloor) - float64(order.FromButton.Floor)))
 

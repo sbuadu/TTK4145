@@ -46,18 +46,18 @@ func main() {
 	//startSlave.Start()
 	if *startMaster {
 		fmt.Println("Starting Master")
-		go master.Master(false)
+		go master.MasterLoop(false)
 	}
 	if *startMasterBackup {
-		go master.Master(true)
+		go master.MasterLoop(true)
 	}
 	if *startSlave {
 		fmt.Println("Starting slave")
-		go slave.Slave(false)
+		go slave.SlaveLoop(false)
 	}
 	if *startSlaveBackup {
 		fmt.Println("Starting slavebackup")
-		go slave.Slave(true)
+		go slave.SlaveLoop(true)
 	}
 	for {
 
