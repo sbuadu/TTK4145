@@ -183,8 +183,7 @@ func Slave(isBackup bool) {
 	sendOrders := make(chan util.Order)
 	callback := make(chan time.Time)
 
-	orderChanMaster := make(chan []util.Order, 1)  //used to send updates on order slice to master
-	stateChanMaster := make(chan util.Elevator, 1) // used to send updates on the elevators state to master
+	
 	firstTry := true
 
 	for {
@@ -220,13 +219,15 @@ func Slave(isBackup bool) {
 							return
 						}
 					}
-					}()
+				}()
 
 					go func() {
+						for {
 						if driver.GetCurrentFloor() == 3 && thisElevator.ElevDirection == 0 || driver.GetCurrentFloor() == 0 && thisElevator.ElevDirection == 1 {
 							driver.SteerElevator(2)
 						}
-						}()
+					}
+					}()
 
 			//updating the orderSlice backup
 						go func() {
@@ -251,6 +252,8 @@ func Slave(isBackup bool) {
 							fmt.Println("I'm a slave now")
 							newStateChanBackup := make(chan util.Elevator, 1)
 							newOrderChanBackup := make(chan []util.Order, 1)
+							orderChanMaster := make(chan []util.Order, 1)  //used to send updates on order slice to master
+							stateChanMaster := make(chan util.Elevator, 1) // used to send updates on the elevators state to master
 
 							go bcast.Transmitter(20009, sendOrders, orderChanMaster, stateChanMaster)
 							go bcast.Receiver(20009, listenForOrders, callback)
@@ -266,6 +269,8 @@ func Slave(isBackup bool) {
 								for {
 									select {
 									case <-newStateChanBackup:
+									case <- stateChanMaster:
+									case <- orderChanMaster:
 									default:
 									}
 									newStateChanBackup <- thisElevator
@@ -273,9 +278,11 @@ func Slave(isBackup bool) {
 									orderSlice = <-orderChan
 									newOrderChanBackup <- orderSlice
 									orderChan <- orderSlice
-					//stateChanMaster <- thisElevator
+									stateChanMaster <- thisElevator
+									orderChanMaster <- orderSlice
+									fmt.Println("Updated backup and master")
 
-									time.Sleep(100 * time.Millisecond)
+									time.Sleep(1000 * time.Millisecond)
 
 								}
 								}()
