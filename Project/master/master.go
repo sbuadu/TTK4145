@@ -27,10 +27,7 @@ func sendOrder(order util.Order, sendOrders chan util.Order) {
 	//TODO: callback functionality
 }
 
-func distributeOrder(listenForOrders, sendOrders chan util.Order, orderChan chan [util.Nslaves][]util.Order) {
-	for {
-		order := <-listenForOrders
-		fmt.Println("Master Received order", order)
+func distributeOrder(order util.Order, sendOrders chan util.Order, orderChan chan [util.Nslaves][]util.Order) {
 		if order.Completed {
 			go sendOrder(order, sendOrders)
 			for i :=0;i<util.Nslaves;i++{
@@ -44,15 +41,14 @@ func distributeOrder(listenForOrders, sendOrders chan util.Order, orderChan chan
 			order.ThisElevator = orderManagement.FindSuitableElevator(slaves, order)
 			go sendOrder(order, sendOrders)
 		}
-	}
 }
 
 func Master(isBackup bool) {
-	var orderChannel = make(chan util.Order) //orders coming from elevators
-	var statusChannel = make(chan util.Elevator) //Status from elevators
+	var orderChannel = make(chan util.Order)	//orders coming from elevators
+	var statusChannel = make(chan util.Elevator)	//Status from elevators
 	var orderSliceChannel = make(chan []util.Order) //Orderslice of each elevator
-	var sendOrder = make(chan util.Order)
-	var orders [util.Nslaves][]util.Order
+	var sendOrder = make(chan util.Order)		//Broadcast orders to slaves
+	var orders :=make([util.Nslaves][]util.Order,0)	//All orders at slaves
 	//local process channels
 	slavesChan := make(chan [util.Nslaves]util.Elevator)
 	orderChan := make(chan [util.Nslaves][]util.Order)
@@ -142,7 +138,11 @@ func Master(isBackup bool) {
 					}
 				}
 			}
-
+		//Settig up timers for slaves
+		var timers [util.Nslaves]time.Timer
+		for i := 0; i <util.Nslaves; i++ {
+			timers[i] := time.NewTimer(10*time.Second)
+		}
 		//start backup master on remote pc, take first in list that is not itself
 		for i:=0;i<len(slaveIPs);i++{
 			slaveAlive =<-slaveAliveChan
@@ -155,9 +155,14 @@ func Master(isBackup bool) {
 		//Set up communication
 		go bcast.Transmitter(20009, sendOrder)
 		go bcast.Receiver(20009, orderChannel, orderSliceChannel, statusChannel)
-			//should all these channels have different names??
-		go distributeOrder(orderChannel, sendOrder, orderChan)
 		go bcast.Transmitter(20011,orderBackupChan, slavesBackupChan)
+		
+		go func(){
+			for {
+				order :=<-orderChannel
+				go distributeOrder(order, sendOrder, orderChan)
+			}
+		}()
 		go func() {
 			for {
 				orders =<-orderChan
@@ -180,6 +185,7 @@ func Master(isBackup bool) {
 							orders =<-orderChan
 							orders[i] = orderSlice
 							orderChan <- orders
+							break
 						}
 					}
 				}
@@ -190,11 +196,34 @@ func Master(isBackup bool) {
 						slaves=<-slavesChan
 						slaves[i] = status
 						slavesChan <- slaves
+						timers[i].Reset(10*time.Second)
+						break
 					}
 				}
 			}
-			}()
-
+		}()
+		// checking for non-responsive slaves and working accordingly
+		go func(){
+			for j:= 0;;j++{
+				select{
+				case <-timers[j].C:
+					slaveAlive =<-SlaveAliveChan
+					slaveAlive[j] = false
+					slaveAliveChan <- slaveAlive
+					orders =<-orderChan
+					for i:=0;i<len(orders);i++{
+						if !orders[j][i].FromButton.TypeOfButton == 2 {
+							orders[j][i].Completed = true
+							go sendOrder(orders[j][i],sendOrder)
+							orders[j][i].Completed = false
+							go distributeOrders(orders[j][i],sendOrder,orderChan)
+						}
+					}
+				default:
+				}
+			}
 		}
+		
+}
 
 	}
