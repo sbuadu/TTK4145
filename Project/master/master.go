@@ -8,6 +8,7 @@ import (
 "time"
 "fmt"
 "../orderManagement"
+"bytes"
 )
 
 var slaveIPs = [util.Nslaves]string{"129.241.187.157", "129.241.187.153"}
@@ -15,8 +16,15 @@ var slaveIPs = [util.Nslaves]string{"129.241.187.157", "129.241.187.153"}
 
 //tested: works
 func InitSlave(IP string) {
-	spawnSlave := exec.Command("gnome-terminal", "-x", "sh", "-c", "sshpass -p Sanntid15 ssh student@", IP, " go run /home/student/Documents/Group55/TTK4145/Project/main.go -startSlave")
-	spawnSlave.Start()
+	spawnSlave := exec.Command("bash","./startSlave.sh",IP,"-startSlave")
+	//spawnSlave := exec.Command("sshpass -p Sanntid15 ssh student@", IP, " go run /home/student/Documents/Group55/TTK4145/Project/main.go -startSlave")
+	//spawnSlave := exec.Command("sshpass", "-p", "Sanntid15","ssh","student@",IP,"go run /home/student/Documents/Group55/TTK4145/Project/main.go -startSlave")
+	 var out bytes.Buffer
+    spawnSlave.Stdout = &out
+    err := spawnSlave.Start()
+    if err != nil {
+        fmt.Println(err)
+    }
 }
 
 //tested: works
@@ -67,7 +75,9 @@ func DistributeIncompleteOrder(order util.Order, sendOrdersChannel chan util.Ord
 			for {
 				fmt.Println("starting the distribution")
 				order :=<- orderChannel
+				fmt.Println("Here")
 				callbackChannel <- order.AtTime
+
 				if order.Completed { //removing the completed order from the backup slice
 					go sendOrder(order, sendOrdersChannel)
 					for i :=0;i<util.Nslaves;i++{
@@ -78,7 +88,9 @@ func DistributeIncompleteOrder(order util.Order, sendOrdersChannel chan util.Ord
 						}
 					}
 				} else {
+
 					DistributeIncompleteOrder(order, sendOrdersChannel, orderChan, slaveAliveChan, slavesChan)
+
 
 				}
 			}
@@ -175,16 +187,6 @@ func DistributeIncompleteOrder(order util.Order, sendOrdersChannel chan util.Ord
 			if  slaves[0].IP == ""{ //if slaves arent initialized, initialize 
 				for i := 0; i < util.Nslaves; i++ {
 					InitSlave(slaveIPs[i])
-					/*
-					if myIP != slaveIPs[i] {
-						InitSlave(slaveIPs[i])
-						
-					}else{
-						//test if this can be done in initSlave
-						spawnBackup := exec.Command("gnome-terminal", "-x", "sh", "-c", "go run /home/student/Documents/Group55/TTK4145/Project/main.go -startSlave")
-						spawnBackup.Start()
-						
-						}*/
 						slaves = <-slavesChan
 						slaves[i] = util.Elevator{slaveIPs[i],0,2}
 						slavesChan <- slaves
@@ -196,6 +198,7 @@ func DistributeIncompleteOrder(order util.Order, sendOrdersChannel chan util.Ord
 					fmt.Println("here")
 					slaveAliveBackupChan <- slaveAlive
 				}
+
 		//Settig up timers for slaves
 				var timers [util.Nslaves] *time.Timer
 				for i := 0; i <util.Nslaves; i++ {
@@ -276,7 +279,9 @@ func DistributeIncompleteOrder(order util.Order, sendOrdersChannel chan util.Ord
 												orders[j][i].Completed = true
 												go sendOrder(orders[j][i],sendOrdersChannel)
 												orders[j][i].Completed = false
+
 												DistributeIncompleteOrder(orders[j][i], sendOrdersChannel , orderChan,  slaveAliveChan, slavesChan)
+
 
 											}
 										}
