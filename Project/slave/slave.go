@@ -19,8 +19,8 @@ func SendOrder(order util.Order, sendOrders chan util.Order, orderChan , otherOr
 	fmt.Println("Sent order")
 	sendSuccess := false
 
-	for i := 0 ; i < util.Nslaves; i++{
-		time.Sleep(300 * time.Millisecond)
+	for i := 0 ; i < 3; i++{
+		time.Sleep(1000 * time.Millisecond)
 		select{
 			case 	timestamp := <-callback: 
 			if timestamp == order.AtTime{

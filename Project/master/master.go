@@ -11,8 +11,8 @@ import (
 "bytes"
 )
 
-var slaveIPs = [util.Nslaves]string{"129.241.187.153"}
-// var slaveIPs = [util.Nslaves]string{"129.241.187.153"}
+var slaveIPs = [util.Nslaves]string{"129.241.187.157","129.241.187.153"}
+//var slaveIPs = [util.Nslaves]string{"129.241.187.153"}
 
 //tested: works
 func InitSlave(IP string) {
@@ -73,11 +73,8 @@ func DistributeIncompleteOrder(order util.Order, sendOrders chan util.Order, ord
 //tested: works
 		func distributeOrder(orderChannel, sendOrders chan util.Order, orderChan chan [util.Nslaves][]util.Order, slaveAliveChan chan [util.Nslaves]bool, slavesChan chan [util.Nslaves]util.Elevator, callback chan time.Time) {
 			for {
-				fmt.Println("starting the distribution")
 				order :=<- orderChannel
-				fmt.Println("here")
-				callback <- order.AtTime
-
+				
 				if order.Completed { //removing the completed order from the backup slice
 					go sendOrder(order, sendOrders)
 					for i :=0;i<util.Nslaves;i++{
@@ -194,7 +191,6 @@ func DistributeIncompleteOrder(order util.Order, sendOrders chan util.Order, ord
 						slaveAliveChan <- slaveAlive
 						fmt.Println("Started slave on ", slaves[i].IP)
 					}
-					fmt.Println("here")
 					slaveAliveBackupChan <- slaveAlive
 				}
 
@@ -255,6 +251,7 @@ func DistributeIncompleteOrder(order util.Order, sendOrders chan util.Order, ord
 									slaves=<-slavesChan
 									slaves[i] = status
 									slavesChan <- slaves
+									fmt.Println(status.IP," Present")
 									timers[i].Reset(5*time.Second)
 								}
 							}
