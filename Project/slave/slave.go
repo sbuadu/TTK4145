@@ -227,7 +227,7 @@ func Slave(isBackup bool) {
 
 						thisElevator = <-stateChanBackup
 						fmt.Println("Elevator at floor", thisElevator.LastFloor)
-						tmr.Reset(5 * time.Second)
+						tmr.Reset(3 * time.Second)
 					} else {
 						return
 					}

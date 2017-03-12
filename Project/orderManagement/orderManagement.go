@@ -114,11 +114,11 @@ func calculateCost(elevator util.Elevator, order util.Order) int {
 
 	var distance = int(math.Abs(float64(elevator.LastFloor) - float64(order.FromButton.Floor)))
 
-	if (elevator.ElevDirection == 2) || (elevator.ElevDirection == 0 && order.FromButton.TypeOfButton == 0 && (elevator.LastFloor < order.FromButton.Floor)) || (elevator.ElevDirection == 1 && order.FromButton.TypeOfButton == 1 && elevator.LastFloor > order.FromButton.Floor) {
+	if  (elevator.ElevDirection == 0 && order.FromButton.TypeOfButton == 0 && (elevator.LastFloor < order.FromButton.Floor)) || (elevator.ElevDirection == 1 && order.FromButton.TypeOfButton == 1 && elevator.LastFloor > order.FromButton.Floor) {
 		return 6 + distance*2
 	} else if (elevator.ElevDirection == 0 && order.FromButton.TypeOfButton == 1 && elevator.LastFloor < order.FromButton.Floor) || (elevator.ElevDirection == 1 && order.FromButton.TypeOfButton == 0 && elevator.LastFloor > order.FromButton.Floor) {
 		return 5 + distance*2
 	} else {
-		return 1
+		return distance
 	}
 }

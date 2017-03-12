@@ -10,12 +10,12 @@ import (
 "../orderManagement"
 )
 
-var slaveIPs = [util.Nslaves]string{"129.241.187.153","129.241.187.157"}
+var slaveIPs = [util.Nslaves]string{"129.241.187.157", "129.241.187.153"}
 // var slaveIPs = [util.Nslaves]string{"129.241.187.153"}
 
 //tested: works
 func InitSlave(IP string) {
-	spawnSlave := exec.Command("gnome-terminal", "-x", "sh", "-c", "sshpass -p 'Sanntid15' ssh student@", IP, "go run /home/student/Documents/Group55/TTK4145/Project/main.go -startSlave")
+	spawnSlave := exec.Command("gnome-terminal", "-x", "sh", "-c", "sshpass -p Sanntid15 ssh student@", IP, " go run /home/student/Documents/Group55/TTK4145/Project/main.go -startSlave")
 	spawnSlave.Start()
 }
 
@@ -25,6 +25,41 @@ func sendOrder(order util.Order, sendOrders chan util.Order) {
 		sendOrders <- order
 		time.Sleep(1*time.Second)
 	}
+}
+
+func reDistributeOrder(order util.Order, sendOrders chan util.Order, slaveAliveChan chan [util.Nslaves]bool, slavesChan chan [util.Nslaves]util.Elevator, orderChan chan [util.Nslaves][]util.Order) {
+	var workingSlaves = make([]util.Elevator,0)
+			for i := 0; i<util.Nslaves; i++{
+				slaveAlive :=<-slaveAliveChan
+				slaves :=<-slavesChan
+				slaveAliveChan<-slaveAlive
+				slavesChan<-slaves
+				if slaveAlive[i]{
+					workingSlaves = append(workingSlaves, slaves[i])
+				}
+			}
+
+			order.ThisElevator = orderManagement.FindSuitableElevator(workingSlaves, order)
+			fmt.Print("This elevator: ",order.ThisElevator.IP)
+			fmt.Println("  should go to floor:" ,order.FromButton.Floor)
+			go sendOrder(order, sendOrders)
+	
+			for i :=0;i<util.Nslaves;i++{ //adding the order to the right backup slice
+				if order.ThisElevator.IP == slaveIPs[i]{
+					orders := <-orderChan
+					tempChan := make(chan []util.Order,1)
+					tempChan <- orders[i]
+					dummyChan := make(chan []util.Order,1)
+					dummySlice := make([]util.Order,0)
+					dummyChan <- dummySlice
+		
+					orderManagement.AddOrder(tempChan, dummyChan, order.FromButton.Floor, order.FromButton.TypeOfButton, order.ThisElevator, order.AtTime) 
+					orders[i] = <- tempChan
+					orderChan <- orders
+
+				}
+
+			}
 }
 //tested: works
 func distributeOrder(orderChannel, sendOrders chan util.Order, orderChan chan [util.Nslaves][]util.Order, slaveAliveChan chan [util.Nslaves]bool, slavesChan chan [util.Nslaves]util.Elevator, callback chan time.Time) {
@@ -42,39 +77,7 @@ func distributeOrder(orderChannel, sendOrders chan util.Order, orderChan chan [u
 				}
 			}
 		} else {
-
-			var workingSlaves = make([]util.Elevator,0)
-			for i := 0; i<util.Nslaves; i++{
-				slaveAlive :=<-slaveAliveChan
-				slaves :=<-slavesChan
-				slaveAliveChan<-slaveAlive
-				slavesChan<-slaves
-				if slaveAlive[i]{
-					workingSlaves = append(workingSlaves, slaves[i])
-				}
-			}
-	
-			order.ThisElevator = orderManagement.FindSuitableElevator(workingSlaves, order)
-			go sendOrder(order, sendOrders)
-	
-			for i :=0;i<util.Nslaves;i++{ //adding the order to the right backup slice
-				if order.ThisElevator.IP == slaveIPs[i]{
-					orders := <-orderChan
-
-					tempChan := make(chan []util.Order,1)
-					fmt.Println(orders[i])
-					tempChan <- orders[i]
-					fmt.Println("here")
-					dummyChan := make(chan []util.Order,1)
-					dummySlice := make([]util.Order,0)
-					dummyChan <- dummySlice
-					orderManagement.AddOrder(tempChan, dummyChan, order.FromButton.Floor, order.FromButton.TypeOfButton, order.ThisElevator, order.AtTime) 
-					orders[i] = <- tempChan
-					orderChan <- orders
-
-				}
-
-			}
+					reDistributeOrder(order, sendOrders, slaveAliveChan, slavesChan, orderChan)
 
 		}
 	}
@@ -149,14 +152,15 @@ func Master(isBackup bool) {
 				slavesChan <-slaves
 				orderChan <- orders
 				slaveAliveChan <- slaveAlive
-				myIP, _ := localip.LocalIP()
+				//myIP, _ := localip.LocalIP()
+				/*
 				for i:=0;i<len(slaveIPs);i++{
 					if slaveIPs[i] != myIP && slaveAlive[i] {
 						spawnMasterBackup := exec.Command("gnome-terminal", "-x", "sh", "-c", "sshpass -p 'Sanntid15' ssh student@", slaveIPs[i], "go run /home/student/Documents/Group55/TTK4145/Project/main.go -startMasterBackup")
 						spawnMasterBackup.Start()
 						break
 					}
-				}
+				}*/
 				}()
 			}
 
@@ -198,7 +202,7 @@ func Master(isBackup bool) {
 			slaveAliveChan <- slaveAlive
 			if slaveIPs[i] != myIP && slaveAlive[i]{
 				backupIP = slaveIPs[i]
-				spawnMasterBackup := exec.Command("gnome-terminal", "-x", "sh", "-c", "sshpass -p 'Sanntid15' ssh student@", slaveIPs[i], "go run /home/student/Documents/Group55/TTK4145/Project/main.go -startMasterBackup")
+				spawnMasterBackup := exec.Command("gnome-terminal", "-x", "sh", "-c", "sshpass -p Sanntid15 ssh student@", slaveIPs[i], " go run /home/student/Documents/Group55/TTK4145/Project/main.go -startMasterBackup")
 				spawnMasterBackup.Start()
 				break
 			}
@@ -232,13 +236,12 @@ func Master(isBackup bool) {
 		go func() {
 			for {
 				status :=<-statusChannel
-				fmt.Println("Elevator present IP: ", status.IP)
 				for i:=0;i<util.Nslaves;i++{
 					if status.IP == slaveIPs[i] {
 						slaves=<-slavesChan
 						slaves[i] = status
 						slavesChan <- slaves
-						timers[i].Reset(10*time.Second)
+						timers[i].Reset(5*time.Second)
 					}
 				}
 			}
@@ -256,12 +259,16 @@ func Master(isBackup bool) {
 					slaveAlive[j] = false
 					slaveAliveChan <- slaveAlive
 					orders =<-orderChan
+					orderChan<- orders
+					fmt.Println("redistibuting dead slaves orders")
 					for i:=0;i<len(orders[j]);i++{
+
 						if !(orders[j][i].FromButton.TypeOfButton == 2) {
 							orders[j][i].Completed = true
 							go sendOrder(orders[j][i],sendOrders)
 							orders[j][i].Completed = false
-							go sendOrder(orders[j][i],sendOrders)
+							reDistributeOrder(orders[j][i], sendOrders, slaveAliveChan, slavesChan, orderChan)
+						
 						}
 					}
 
