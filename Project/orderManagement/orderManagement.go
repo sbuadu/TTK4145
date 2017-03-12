@@ -30,7 +30,6 @@ func AddOrder(orderChan, otherOrderChan chan []util.Order, floor, button int, el
 func RemoveOrder(order util.Order, orderSlice []util.Order) []util.Order {
 	for i := 0; i < len(orderSlice); i++ {
 		if orderSlice[i].FromButton.Floor == order.FromButton.Floor && orderSlice[i].FromButton.TypeOfButton == order.FromButton.TypeOfButton {
-
 			orderSlice = append(orderSlice[:i], orderSlice[i+1:]...)
 			if len(orderSlice) == 0 {
 				return []util.Order{}
@@ -54,7 +53,7 @@ func duplicateOrder(order util.Order, orderSlice []util.Order) bool {
 
 func PrioritizeOrder(order util.Order, orderSlice []util.Order, elevator util.Elevator) []util.Order {
 
-	if len(orderSlice) < 1 { //if no orders
+	if len(orderSlice) < 1 { //if no other orders
 
 		return append(orderSlice, order)
 
@@ -95,7 +94,6 @@ func FindSuitableElevator(order util.Order, slaves []util.Elevator) util.Elevato
 	if order.FromButton.TypeOfButton == 2{
 		return order.ThisElevator
 	}
-
 	for i := 0; i < len(slaves); i++ {
 		cost := calculateCost(order, slaves[i])
 		if cost > bestCost {
