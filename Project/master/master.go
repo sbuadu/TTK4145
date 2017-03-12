@@ -20,15 +20,15 @@ func InitSlave(IP string) {
 }
 
 //tested: works
-func sendOrder(order util.Order, sendOrders chan util.Order) {
+func sendOrder(order util.Order, sendOrdersChannel chan util.Order) {
 	for i :=0; i<3; i++{
-		sendOrders <- order
+		sendOrdersChannel <- order
 		time.Sleep(1*time.Second)
 	}
 }
 
 //tested: works
-func DistributeIncompleteOrder(order util.Order, sendOrders chan util.Order, orderChan chan [util.Nslaves][]util.Order, slaveAliveChan chan [util.Nslaves]bool, slavesChan chan [util.Nslaves]util.Elevator) {
+func DistributeIncompleteOrder(order util.Order, sendOrdersChannel chan util.Order, orderChan chan [util.Nslaves][]util.Order, slaveAliveChan chan [util.Nslaves]bool, slavesChan chan [util.Nslaves]util.Elevator) {
 	var workingSlaves = make([]util.Elevator,0)
 	for i := 0; i<util.Nslaves; i++{
 		slaveAlive :=<-slaveAliveChan
@@ -43,7 +43,7 @@ func DistributeIncompleteOrder(order util.Order, sendOrders chan util.Order, ord
 	order.ThisElevator = orderManagement.FindSuitableElevator(order, workingSlaves)
 	fmt.Print("This elevator: ",order.ThisElevator.IP)
 	fmt.Println("  should go to floor:" ,order.FromButton.Floor)
-	go sendOrder(order, sendOrders)
+	go sendOrder(order, sendOrdersChannel)
 	
 			for i :=0;i<util.Nslaves;i++{ //adding the order to the right backup slice
 				if order.ThisElevator.IP == slaveIPs[i]{
@@ -63,13 +63,13 @@ func DistributeIncompleteOrder(order util.Order, sendOrders chan util.Order, ord
 			}
 		}
 //tested: works
-		func distributeOrder(orderChannel, sendOrders chan util.Order, orderChan chan [util.Nslaves][]util.Order, slaveAliveChan chan [util.Nslaves]bool, slavesChan chan [util.Nslaves]util.Elevator, callback chan time.Time) {
+		func distributeOrder(orderChannel, sendOrdersChannel chan util.Order, orderChan chan [util.Nslaves][]util.Order, slaveAliveChan chan [util.Nslaves]bool, slavesChan chan [util.Nslaves]util.Elevator, callbackChannel chan time.Time) {
 			for {
 				fmt.Println("starting the distribution")
 				order :=<- orderChannel
-				callback <- order.AtTime
+				callbackChannel <- order.AtTime
 				if order.Completed { //removing the completed order from the backup slice
-					go sendOrder(order, sendOrders)
+					go sendOrder(order, sendOrdersChannel)
 					for i :=0;i<util.Nslaves;i++{
 						if order.ThisElevator.IP == slaveIPs[i]{
 							orders := <-orderChan
@@ -78,7 +78,7 @@ func DistributeIncompleteOrder(order util.Order, sendOrders chan util.Order, ord
 						}
 					}
 				} else {
-					DistributeIncompleteOrder(order, sendOrders, , orderChan, slaveAliveChan, slavesChan)
+					DistributeIncompleteOrder(order, sendOrdersChannel, orderChan, slaveAliveChan, slavesChan)
 
 				}
 			}
@@ -93,8 +93,8 @@ func DistributeIncompleteOrder(order util.Order, sendOrders chan util.Order, ord
 	//channels for communication with slaves
 	orderChannel := make(chan util.Order,1)	
 	statusChannel := make(chan util.Elevator,1)	
-	sendOrders := make(chan util.Order,1)	
-	callback := make(chan time.Time,1)	
+	sendOrdersChannel := make(chan util.Order,1)	
+	callbackChannel := make(chan time.Time,1)	
 
 
 	//local process channels
@@ -215,12 +215,12 @@ func DistributeIncompleteOrder(order util.Order, sendOrders chan util.Order, ord
 				}
 
 		//Set up communication
-				go bcast.Transmitter("255.255.255.255",20009, sendOrders, callback)
+				go bcast.Transmitter("255.255.255.255",20009, sendOrdersChannel, callbackChannel)
 				go bcast.Receiver(20008, orderChannel, statusChannel)
 				go bcast.Transmitter(backupIP,20011,orderBackupChan, slavesBackupChan, slaveAliveBackupChan)
 
 
-				go distributeOrder(orderChannel, sendOrders, orderChan,slaveAliveChan,slavesChan, callback)
+				go distributeOrder(orderChannel, sendOrdersChannel, orderChan,slaveAliveChan,slavesChan, callbackChannel)
 
 
 		//tested: 
@@ -274,9 +274,9 @@ func DistributeIncompleteOrder(order util.Order, sendOrders chan util.Order, ord
 
 											if !(orders[j][i].FromButton.TypeOfButton == 2) {
 												orders[j][i].Completed = true
-												go sendOrder(orders[j][i],sendOrders)
+												go sendOrder(orders[j][i],sendOrdersChannel)
 												orders[j][i].Completed = false
-												DistributeIncompleteOrder(orders[j][i], sendOrders, , orderChan,  slaveAliveChan, slavesChan)
+												DistributeIncompleteOrder(orders[j][i], sendOrdersChannel , orderChan,  slaveAliveChan, slavesChan)
 
 											}
 										}
