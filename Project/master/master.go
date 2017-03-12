@@ -111,6 +111,7 @@ func Master(isBackup bool) {
 	orderChan <- orders
 	slaveAliveChan <- slaveAlive
 
+
 	for j := 0; j < util.Nslaves; j++ {
 		orders[j] = make([]util.Order, 0)
 	}
@@ -129,6 +130,7 @@ func Master(isBackup bool) {
 		go bcast.Receiver(20011, ordersFromMaster, statusFromMaster,slaveAliveFromMaster)
 		go func() {
 			for {
+				fmt.Println("receiving update from Master")
 				orders =<-ordersFromMaster
 				slaves =<-statusFromMaster
 				//slaveAlive =<-slaveAliveFromMaster //this is not done as often as the two others, should be moved.. 
@@ -160,17 +162,9 @@ func Master(isBackup bool) {
 			slavesChan <-slaves
 			orderChan <- orders
 			slaveAliveChan <- slaveAlive
-
-			myIP, _ := localip.LocalIP()
-			for i:=0;i<len(slaveIPs);i++{
-				if slaveIPs[i] != myIP && slaveAlive[i] {
-					spawnMasterBackup := exec.Command("gnome-terminal", "-x", "sh", "-c", "sshpass -p 'Sanntid15' ssh student@", slaveIPs[i], "go run /home/student/Documents/Group55/TTK4145/Project/main.go -startMasterBackup")
-					spawnMasterBackup.Start()
-					break
-				}
-			}
+		
 		}()
-
+}
 			//tested:
 				if !isBackup && firstTry {
 					fmt.Println("I am the master")
@@ -180,6 +174,8 @@ func Master(isBackup bool) {
 
 			if  slaves[0].IP == ""{ //if slaves arent initialized, initialize 
 				for i := 0; i < util.Nslaves; i++ {
+						InitSlave(slaveIPs[i])
+					/*
 					if myIP != slaveIPs[i] {
 						InitSlave(slaveIPs[i])
 						
@@ -188,7 +184,7 @@ func Master(isBackup bool) {
 						spawnBackup := exec.Command("gnome-terminal", "-x", "sh", "-c", "go run /home/student/Documents/Group55/TTK4145/Project/main.go -startSlave")
 						spawnBackup.Start()
 						
-					}
+					}*/
 					slaves = <-slavesChan
 					slaves[i] = util.Elevator{slaveIPs[i],0,2}
 					slavesChan <- slaves
@@ -197,6 +193,7 @@ func Master(isBackup bool) {
 					slaveAliveChan <- slaveAlive
 					fmt.Println("Started slave on ", slaves[i].IP)
 				}
+				fmt.Println("here")
 				slaveAliveBackupChan <- slaveAlive
 			}
 		//Settig up timers for slaves
@@ -210,6 +207,7 @@ func Master(isBackup bool) {
 				slaveAliveChan <- slaveAlive
 				if slaveIPs[i] != myIP && slaveAlive[i]{
 					backupIP = slaveIPs[i]
+					fmt.Println("Spawning a backup on IP", backupIP)
 					spawnMasterBackup := exec.Command("gnome-terminal", "-x", "sh", "-c", "sshpass -p Sanntid15 ssh student@", slaveIPs[i], " go run /home/student/Documents/Group55/TTK4145/Project/main.go -startMasterBackup")
 					spawnMasterBackup.Start()
 					break
@@ -292,4 +290,3 @@ func Master(isBackup bool) {
 
 				}
 
-}
