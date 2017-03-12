@@ -129,16 +129,16 @@ func MasterLoop(isBackup bool) {
 	}
 	firstTry := true
 
-
-		//tested: 
+	for {		
+	//tested:
 	if isBackup && firstTry {
 		fmt.Println("I am a master backup")
 		firstTry = false
 		tmr := time.NewTimer(5 * time.Second)
 		//listening to master	
-		ordersFromMaster := make(chan [util.Nslaves][]util.Order)
-		statusFromMaster := make(chan [util.Nslaves]util.Elevator)
-		slaveAliveFromMaster := make(chan [util.Nslaves]bool)
+		ordersFromMaster := make(chan [util.Nslaves][]util.Order,1)
+		statusFromMaster := make(chan [util.Nslaves]util.Elevator,1)
+		slaveAliveFromMaster := make(chan [util.Nslaves]bool,1)
 		go bcast.Receiver(20011, ordersFromMaster, statusFromMaster,slaveAliveFromMaster)
 		go func() {
 			for {
@@ -159,6 +159,7 @@ func MasterLoop(isBackup bool) {
 					<-tmr.C
 					isBackup = false
 					firstTry = true
+					fmt.Println("Master is dead, dobby is free!")
 					select{
 					case <- slavesChan:
 					default:
@@ -211,7 +212,7 @@ func MasterLoop(isBackup bool) {
 					if slaveIPs[i] != myIP && slaveAlive[i]{
 						backupIP = slaveIPs[i]
 						fmt.Println("Spawning a backup on IP", backupIP)
-						spawnMasterBackup := exec.Command("gnome-terminal", "-x", "sh", "-c", "sshpass -p Sanntid15 ssh student@", slaveIPs[i], " go run /home/student/Documents/Group55/TTK4145/Project/main.go -startMasterBackup")
+						spawnMasterBackup := exec.Command("bash","./startSlave.sh",backupIP,"-startMasterBackup")
 						spawnMasterBackup.Start()
 						break
 					}
@@ -234,13 +235,17 @@ func MasterLoop(isBackup bool) {
 						orderChan <- orders
 						slaves =<-slavesChan
 						slavesChan <- slaves
-
+						select{
+						case <-orderBackupChan:
+						case <- slavesBackupChan:
+						default:
+						}
 						orderBackupChan <- orders	
 						slavesBackupChan <- slaves
 
 						time.Sleep(1*time.Second)
 					}
-					}()
+				}()
 
 		//tested: works
 		//updating info from slave
@@ -292,6 +297,8 @@ func MasterLoop(isBackup bool) {
 							}()
 
 						}
+						time.Sleep(1*time.Second)
+					}
 
 					}
 
