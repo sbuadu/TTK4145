@@ -11,7 +11,7 @@ import (
 )
 
 var slaves [util.Nslaves]util.Elevator
-var slaveIPs = [util.Nslaves]string{"129.241.187.161", "129.241.187.156","255.255.255.255"}
+var slaveIPs = [util.Nslaves]string{"129.241.187.153"}
 var slaveAlive [util.Nslaves]bool
 
 func InitSlave(IP string) {

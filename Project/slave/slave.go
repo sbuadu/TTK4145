@@ -66,10 +66,10 @@ func ListenRemoteOrders(listenForOrders chan util.Order, orderChan, otherOrderCh
 func ListenLocalOrders(callback chan time.Time, sendOrders chan util.Order, orderChan, otherOrderChan chan []util.Order) {
 
 
-	var buttons [util.Nfloors][util.Nslaves]int
+	var buttons [util.Nfloors][util.Nbuttons]int
 	for {
 
-		var recent [util.Nfloors][util.Nslaves]int
+		var recent [util.Nfloors][util.Nbuttons]int
 		buttons = driver.ListenForButtons()
 		changed, floor, button := CompareMatrix(buttons, recent)
 
@@ -152,9 +152,9 @@ func ExecuteOrder(orderChan , otherOrderChan chan []util.Order, sendOrders chan 
 	}
 }
 
-func CompareMatrix(newMatrix, oldMatrix [util.Nfloors][util.Nslaves]int) (changed bool, row, column int) {
+func CompareMatrix(newMatrix, oldMatrix [util.Nfloors][util.Nbuttons]int) (changed bool, row, column int) {
 	for i := 0; i < util.Nfloors; i++ {
-		for j := 0; j < util.Nslaves; j++ {
+		for j := 0; j < util.Nbuttons; j++ {
 			if newMatrix[i][j] != oldMatrix[i][j] {
 				changed = true
 				row = i
@@ -206,9 +206,6 @@ func Slave(isBackup bool) {
 				}
 				orderChan <- orderSlice
 				fmt.Println("Taking over as slave")
-				spawnBackup := exec.Command("gnome-terminal", "-x", "sh", "-c", "go run /home/student/Documents/Group55/TTK4145/Project/main.go -startSlaveBackup")
-				spawnBackup.Start()
-
 				}()
 
 			//checking that the slave is alive

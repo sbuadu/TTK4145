@@ -4,9 +4,10 @@ import (
 	"time"
 )
 
-const Nslaves = 3
+const Nslaves = 1
 const Nfloors = 4
 const DoorOpenTime = 1000 * time.Millisecond
+const Nbuttons = 3
 
 type Direction int
 
