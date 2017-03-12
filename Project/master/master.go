@@ -6,7 +6,7 @@ import (
 "../util"
 "os/exec"
 "time"
-"fmt"
+//"fmt"
 "../orderManagement"
 )
 
@@ -24,7 +24,6 @@ func sendOrder(order util.Order, sendOrders chan util.Order) {
 		sendOrders <- order
 		time.Sleep(1*time.Second)
 	}
-	//TODO: callback functionality
 }
 
 func distributeOrder(order util.Order, sendOrders chan util.Order, orderChan chan [util.Nslaves][]util.Order) {
@@ -38,7 +37,13 @@ func distributeOrder(order util.Order, sendOrders chan util.Order, orderChan cha
 				}
 			}
 		} else {
-			order.ThisElevator = orderManagement.FindSuitableElevator(slaves, order)
+			var workingSlaves = make([]util.Elevator,0)
+			for i := 0; i<util.Nslaves; i++{
+				if slaveAlive[i]{
+					workingSlaves = append(workingSlaves, slaves[i])
+				}
+			}
+			order.ThisElevator = orderManagement.FindSuitableElevator(workingSlaves, order)
 			go sendOrder(order, sendOrders)
 		}
 }
@@ -47,8 +52,8 @@ func Master(isBackup bool) {
 	var orderChannel = make(chan util.Order)	//orders coming from elevators
 	var statusChannel = make(chan util.Elevator)	//Status from elevators
 	var orderSliceChannel = make(chan []util.Order) //Orderslice of each elevator
-	var sendOrder = make(chan util.Order)		//Broadcast orders to slaves
-	var orders :=make([util.Nslaves][]util.Order,0)	//All orders at slaves
+	var sendOrders = make(chan util.Order)		//Broadcast orders to slaves
+	var orders  [util.Nslaves][]util.Order	//All orders at slaves
 	//local process channels
 	slavesChan := make(chan [util.Nslaves]util.Elevator)
 	orderChan := make(chan [util.Nslaves][]util.Order)
@@ -139,9 +144,9 @@ func Master(isBackup bool) {
 				}
 			}
 		//Settig up timers for slaves
-		var timers [util.Nslaves]time.Timer
+		var timers [util.Nslaves] *time.Timer
 		for i := 0; i <util.Nslaves; i++ {
-			timers[i] := time.NewTimer(10*time.Second)
+			timers[i] = time.NewTimer(10*time.Second)
 		}
 		//start backup master on remote pc, take first in list that is not itself
 		for i:=0;i<len(slaveIPs);i++{
@@ -153,14 +158,15 @@ func Master(isBackup bool) {
 			}
 		}
 		//Set up communication
-		go bcast.Transmitter(20009, sendOrder)
+		go bcast.Transmitter(20009, sendOrders)
 		go bcast.Receiver(20009, orderChannel, orderSliceChannel, statusChannel)
+
 		go bcast.Transmitter(20011,orderBackupChan, slavesBackupChan)
 		
 		go func(){
 			for {
 				order :=<-orderChannel
-				go distributeOrder(order, sendOrder, orderChan)
+				go distributeOrder(order, sendOrders, orderChan)
 			}
 		}()
 		go func() {
@@ -207,23 +213,25 @@ func Master(isBackup bool) {
 			for j:= 0;;j++{
 				select{
 				case <-timers[j].C:
-					slaveAlive =<-SlaveAliveChan
+					slaveAlive =<-slaveAliveChan
 					slaveAlive[j] = false
 					slaveAliveChan <- slaveAlive
 					orders =<-orderChan
 					for i:=0;i<len(orders);i++{
-						if !orders[j][i].FromButton.TypeOfButton == 2 {
+						if !(orders[j][i].FromButton.TypeOfButton == 2) {
 							orders[j][i].Completed = true
-							go sendOrder(orders[j][i],sendOrder)
+							go sendOrder(orders[j][i],sendOrders)
 							orders[j][i].Completed = false
-							go distributeOrders(orders[j][i],sendOrder,orderChan)
+							go distributeOrder(orders[j][i],sendOrders,orderChan)
 						}
 					}
 				default:
 				}
+				if j == util.Nslaves - 1 {
+					j = 0
+				}
 			}
+		}()
 		}
-		
-}
 
 	}
