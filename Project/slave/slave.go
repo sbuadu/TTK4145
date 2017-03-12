@@ -138,9 +138,7 @@ func ExecuteOrder(orderChan , otherOrderChan chan []util.Order, sendOrders chan 
 				driver.SetDoorLamp(1)
 				driver.SetButtonLamp(currentOrder.FromButton.Floor, currentOrder.FromButton.TypeOfButton, 0)
 			} else {
-
 				goToFloor(currentOrder, currentFloor)
-				
 			}
 			orderSlice := <-orderChan
 			orderSlice = orderManagement.RemoveOrder(currentOrder, orderSlice)
@@ -186,14 +184,13 @@ func Slave(isBackup bool) {
 	sendOrders := make(chan util.Order)
 	callback := make(chan time.Time)
 
-	
 	firstTry := true
 
 	for {
 		if isBackup && firstTry {
 			firstTry = false
-			orderChanBackup := make(chan []util.Order, 1)  //used to send updates on order slice to backup
-			stateChanBackup := make(chan util.Elevator, 1) // used to send updates on the elevators state to backup
+			orderChanBackup := make(chan []util.Order, 1)
+			stateChanBackup := make(chan util.Elevator, 1)
 
 			go bcast.Receiver(20010, orderChanBackup, stateChanBackup)
 			tmr := time.NewTimer(5 * time.Second)
@@ -208,91 +205,90 @@ func Slave(isBackup bool) {
 				}
 				orderChan <- orderSlice
 				fmt.Println("Taking over as slave")
-				}()
+			}()
 
 			//checking that the slave is alive
-				go func() {
-					for {
-						if isBackup {
+			go func() {
+				for {
+					if isBackup {
 
-							thisElevator = <-stateChanBackup
-							fmt.Println("Elevator at floor", thisElevator.LastFloor)
-							tmr.Reset(5 * time.Second)
-						} else {
-							return
-						}
+						thisElevator = <-stateChanBackup
+						fmt.Println("Elevator at floor", thisElevator.LastFloor)
+						tmr.Reset(5 * time.Second)
+					} else {
+						return
 					}
-				}()
+				}
+			}()
 
-					go func() {
-						for {
-						if driver.GetCurrentFloor() == 3 && thisElevator.ElevDirection == 0 || driver.GetCurrentFloor() == 0 && thisElevator.ElevDirection == 1 {
-							driver.SteerElevator(2)
-						}
+			go func() {
+				for {
+					if driver.GetCurrentFloor() == 3 && thisElevator.ElevDirection == 0 || driver.GetCurrentFloor() == 0 && thisElevator.ElevDirection == 1 {
+						driver.SteerElevator(2)
 					}
-					}()
+				}
+			}()
 
 			//updating the orderSlice backup
-						go func() {
-							for {
-								if len(orderChanBackup) == cap(orderChanBackup) && isBackup {
-									orderSlice = <-orderChanBackup
-								}
-							}
-							}()
-
-						}
-
-						if !isBackup && firstTry {
-							myIP, _ := localip.LocalIP()
-							firstTry = false
-							driver.InitElevator()
-							orderSlice := <-orderChan
-							orderChan <- orderSlice
-							for i := 0; i < len(orderSlice); i++ {
-								driver.SetButtonLamp(orderSlice[i].FromButton.Floor, orderSlice[i].FromButton.TypeOfButton, 1)
-							}
-
-							fmt.Println("I'm a slave now")
-							newStateChanBackup := make(chan util.Elevator, 1)
-							newOrderChanBackup := make(chan []util.Order, 1)
-							//orderChanMaster := make(chan []util.Order,1)  //used to send updates on order slice to master
-							stateChanMaster := make(chan util.Elevator,1) // used to send updates on the elevators state to master
-
-							go bcast.Transmitter("255.255.255.255",20009, sendOrders, stateChanMaster)
-							go bcast.Receiver(20009, listenForOrders, callback)
-							go bcast.Transmitter( myIP,20010, newOrderChanBackup, newStateChanBackup)
-
-							go ListenLocalOrders(callback, sendOrders, orderChan, otherOrderChan)
-							go ExecuteOrder(orderChan, otherOrderChan, sendOrders)
-							go ListenRemoteOrders(listenForOrders, orderChan, otherOrderChan)
-
-			//notifying I'm alive
-			//updating orderSlice backups
-							go func() {
-								for {
-									select {
-									case <-newStateChanBackup:
-									case <- stateChanMaster:
-											default:
-									}
-									newStateChanBackup <- thisElevator
-									stateChanMaster <- thisElevator
-									
-									
-									orderSlice = <-orderChan
-									newOrderChanBackup <- orderSlice
-									orderChan <- orderSlice
-									fmt.Println(orderSlice)
-
-									time.Sleep(1000 * time.Millisecond)
-
-								}
-								}()
-								spawnBackup := exec.Command("gnome-terminal", "-x", "sh", "-c", "go run /home/student/Documents/Group55/TTK4145/Project/main.go -startSlaveBackup")
-								spawnBackup.Start()
-
-							}
-							time.Sleep(1 * time.Second)
-						}
+			go func() {
+				for isBackup {
+					if len(orderChanBackup) == cap(orderChanBackup) {
+						orderSlice = <-orderChanBackup
 					}
+				}
+			}()
+
+		}
+
+		if !isBackup && firstTry {
+			myIP, _ := localip.LocalIP()
+			firstTry = false
+			driver.InitElevator()
+			orderSlice := <-orderChan
+			orderChan <- orderSlice
+			for i := 0; i < len(orderSlice); i++ {
+				driver.SetButtonLamp(orderSlice[i].FromButton.Floor, orderSlice[i].FromButton.TypeOfButton, 1)
+			}
+
+			fmt.Println("I'm a slave now")
+			newStateChanBackup := make(chan util.Elevator, 1)
+			newOrderChanBackup := make(chan []util.Order, 1)
+			//orderChanMaster := make(chan []util.Order,1)  //used to send updates on order slice to master
+			stateChanMaster := make(chan util.Elevator,1) // used to send updates on the elevators state to master
+
+			go bcast.Transmitter("255.255.255.255",20009, sendOrders, stateChanMaster)
+			go bcast.Receiver(20009, listenForOrders, callback)
+			go bcast.Transmitter( myIP,20010, newOrderChanBackup, newStateChanBackup)
+
+			go ListenLocalOrders(callback, sendOrders, orderChan, otherOrderChan)
+			go ExecuteOrder(orderChan, otherOrderChan, sendOrders)
+			go ListenRemoteOrders(listenForOrders, orderChan, otherOrderChan)
+
+//notifying I'm alive
+//updating orderSlice backups
+			go func() {
+				for {
+					select {
+					case <-newStateChanBackup:
+					case <- stateChanMaster:
+							default:
+					}
+
+					newStateChanBackup <- thisElevator
+					newOrderChanBackup <- orderSlice
+					stateChanMaster <- thisElevator
+					orderSlice = <-orderChan
+					orderChan <- orderSlice
+					fmt.Println(orderSlice)
+
+					time.Sleep(1000 * time.Millisecond)
+
+				}
+			}()
+			spawnBackup := exec.Command("gnome-terminal", "-x", "sh", "-c", "go run /home/student/Documents/Group55/TTK4145/Project/main.go -startSlaveBackup")
+			spawnBackup.Start()
+
+		}
+		time.Sleep(1 * time.Second)
+	}
+}

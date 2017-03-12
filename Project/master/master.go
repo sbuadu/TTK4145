@@ -24,8 +24,10 @@ func sendOrder(order util.Order, sendOrders chan util.Order) {
 	}
 }
 
-func distributeOrder(order util.Order, sendOrders chan util.Order, orderChan chan [util.Nslaves][]util.Order, slaveAliveChan chan [util.Nslaves]bool, slavesChan chan [util.Nslaves]util.Elevator) {
-		//fmt.Println("starting the distribution")
+func distributeOrder(orderChannel, sendOrders chan util.Order, orderChan chan [util.Nslaves][]util.Order, slaveAliveChan chan [util.Nslaves]bool, slavesChan chan [util.Nslaves]util.Elevator) {
+	for {
+	//fmt.Println("starting the distribution")
+		order <- orderChannel
 		if order.Completed {
 			go sendOrder(order, sendOrders)
 			for i :=0;i<util.Nslaves;i++{
@@ -48,7 +50,6 @@ func distributeOrder(order util.Order, sendOrders chan util.Order, orderChan cha
 				if slaveAlive[i]{
 					workingSlaves = append(workingSlaves, slaves[i])
 				}
-			
 			}
 			order.ThisElevator = orderManagement.FindSuitableElevator(workingSlaves, order)
 			go sendOrder(order, sendOrders)
@@ -63,14 +64,15 @@ func distributeOrder(order util.Order, sendOrders chan util.Order, orderChan cha
 					fmt.Println("These are the orders after adding an order: ", orders[i])
 				}
 
+			}
+
 		}
-}
+	}
 }
 
 func Master(isBackup bool) {
 	fmt.Println("Setting up master")
 	var slaves [util.Nslaves]util.Elevator
-	
 	var slaveAlive [util.Nslaves]bool
 	var orderChannel = make(chan util.Order)	//orders coming from elevators
 	var statusChannel = make(chan util.Elevator,1)	//Status from elevators
@@ -84,7 +86,7 @@ func Master(isBackup bool) {
 	orderBackupChan := make(chan [util.Nslaves][]util.Order)
 	slavesBackupChan := make(chan [util.Nslaves]util.Elevator)
 	slaveAliveChan := make(chan [util.Nslaves]bool,1)
-	
+
 	slavesChan <- slaves
 	orderChan <- orders
 	slaveAliveChan <- slaveAlive
@@ -180,8 +182,9 @@ func Master(isBackup bool) {
 			slaveAliveChan <- slaveAlive
 			if slaveIPs[i] != myIP && slaveAlive[i]{
 				backupIP = slaveIPs[i]
-				spawnMasterBackup := exec.Command("gnome-terminal", "-x", "sh", "-c", "nohup ssh student@", slaveIPs[i], "go run /home/student/Documents/Group55/TTK4145/Project/main.go -startMasterBackup")
+				spawnMasterBackup := exec.Command("gnome-terminal", "-x", "sh", "-c", "sshpass -p 'Sanntid15' ssh student@", slaveIPs[i], "go run /home/student/Documents/Group55/TTK4145/Project/main.go -startMasterBackup")
 				spawnMasterBackup.Start()
+				break
 			}
 		}
 		//Set up communication
@@ -189,13 +192,8 @@ func Master(isBackup bool) {
 		go bcast.Receiver(20009, orderChannel, orderSliceChannel, statusChannel)
 
 		go bcast.Transmitter(backupIP,20011,orderBackupChan, slavesBackupChan)
-		
-		go func(){
-			for {
-				order :=<-orderChannel
-				go distributeOrder(order, sendOrders, orderChan,slaveAliveChan,slavesChan)
-			}
-		}()
+
+		go distributeOrder(orderChannel, sendOrders, orderChan,slaveAliveChan,slavesChan)
 
 
 			//sending updates to backup
@@ -215,7 +213,6 @@ func Master(isBackup bool) {
 		go func() {
 			for {
 				fmt.Println("Listening")
-			
 
 				status :=<-statusChannel
 				fmt.Println("Received a status update")
@@ -231,7 +228,6 @@ func Master(isBackup bool) {
 			}
 		}()
 		// checking for non-responsive slaves and working accordingly
-		
 		go func(){
 			for {
 			for j:= 0;j<util.Nslaves;j++{
@@ -247,7 +243,6 @@ func Master(isBackup bool) {
 							orders[j][i].Completed = true
 							go sendOrder(orders[j][i],sendOrders)
 							orders[j][i].Completed = false
-							go distributeOrder(orders[j][i],sendOrders,orderChan, slaveAliveChan, slavesChan)
 						}
 					}
 				}
