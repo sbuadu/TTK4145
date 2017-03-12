@@ -13,25 +13,42 @@ import (
 )
 
 
-func SendOrder(order util.Order, sendOrders chan util.Order, orderChan , otherOrderChan chan []util.Order) {
+//Tested: works
+func SendOrder(order util.Order, sendOrders chan util.Order, orderChan , otherOrderChan chan []util.Order, callback chan time.Time) {
 	sendOrders <- order
 	fmt.Println("Sent order")
-	/*if !order.Completed {
+	sendSuccess := false
+
+	for i := 0 ; i < util.Nslaves; i++{
+		time.Sleep(100 * time.Millisecond)
+		select{
+			case 	timestamp := <-callback: 
+			if timestamp == order.AtTime{
+			sendSuccess = true
+			
+
+		}
+		default: 
+	}
+	}
+	fmt.Println("callback received: ", sendSuccess)
+	if !sendSuccess && !order.Completed {
 		success := orderManagement.AddOrder(orderChan, otherOrderChan, order.FromButton.Floor, order.FromButton.TypeOfButton, order.ThisElevator, order.AtTime)
 		if success == 1 {
 			driver.SetButtonLamp(order.FromButton.Floor, order.FromButton.TypeOfButton, 1)
+			fmt.Println("doing the order myself")
 
 		}
-	}*/
+	}
 }
-
+	
+//must check if light is lit if another elevator is taking the order
 func ListenRemoteOrders(listenForOrders chan util.Order, orderChan, otherOrderChan chan []util.Order) {
 	//TODO: callback
 
 	for {
 
 		order := <-listenForOrders
-		//fmt.Println("Received order from master: ", order)
 		if order.ThisElevator.IP == thisElevator.IP { //the elevator should complete the order itself
 
 			if !order.Completed{ 	//order to be completed
@@ -64,8 +81,8 @@ func ListenRemoteOrders(listenForOrders chan util.Order, orderChan, otherOrderCh
 	}
 }
 
-func ListenLocalOrders(callback chan time.Time, sendOrders chan util.Order, orderChan, otherOrderChan chan []util.Order) {
-
+//see if functionality for adding order urself if network is lost should be here or elsewhere..
+func ListenLocalOrders(sendOrders chan util.Order, orderChan, otherOrderChan chan []util.Order, callback chan time.Time) {
 
 	var buttons [util.Nfloors][util.Nbuttons]int
 	for {
@@ -75,23 +92,17 @@ func ListenLocalOrders(callback chan time.Time, sendOrders chan util.Order, orde
 		changed, floor, button := CompareMatrix(buttons, recent)
 
 		if changed {
-			if button == 0 || button == 1 { //external order
 				order := util.Order{thisElevator, util.Button{floor, button}, time.Now(), false}
 				fmt.Println("sending order")
-				go SendOrder(order, sendOrders, orderChan, otherOrderChan)
+				go SendOrder(order, sendOrders, orderChan, otherOrderChan, callback)
 				time.Sleep(700*time.Millisecond)
-			} else { //internal order
-				success := orderManagement.AddOrder(orderChan, otherOrderChan, floor, button, thisElevator, time.Now())
-				if success == 1 {
-
-					driver.SetButtonLamp(floor, button, 1)
-				}
 			}
 			changed = false
 		}
 		time.Sleep(100 * time.Millisecond)
 	}
-}
+
+//tested: works
 func goToFloor(order util.Order, currentFloor int) {
 	orderFloor := order.FromButton.Floor
 	higher := currentFloor < orderFloor
@@ -118,7 +129,9 @@ func goToFloor(order util.Order, currentFloor int) {
 	driver.SetDoorLamp(1)
 }
 
-func ExecuteOrder(orderChan , otherOrderChan chan []util.Order, sendOrders chan util.Order) {
+
+//tested: works
+func ExecuteOrder(orderChan , otherOrderChan chan []util.Order, sendOrders chan util.Order, callback chan time.Time) {
 
 	currentFloor := driver.GetCurrentFloor()
 	if currentFloor == -1 {
@@ -144,7 +157,7 @@ func ExecuteOrder(orderChan , otherOrderChan chan []util.Order, sendOrders chan 
 			orderSlice = orderManagement.RemoveOrder(currentOrder, orderSlice)
 			orderChan <- orderSlice
 			currentOrder.Completed = true
-			SendOrder(currentOrder, sendOrders, orderChan , otherOrderChan)
+			SendOrder(currentOrder, sendOrders, orderChan , otherOrderChan, callback)
 		} else {
 
 			orderChan <- orderSlice
@@ -251,17 +264,17 @@ func Slave(isBackup bool) {
 			}
 
 			fmt.Println("I'm a slave now")
+
 			newStateChanBackup := make(chan util.Elevator, 1)
 			newOrderChanBackup := make(chan []util.Order, 1)
-			//orderChanMaster := make(chan []util.Order,1)  //used to send updates on order slice to master
-			stateChanMaster := make(chan util.Elevator,1) // used to send updates on the elevators state to master
+			stateChanMaster := make(chan util.Elevator,1) 
 
-			go bcast.Transmitter("255.255.255.255",20009, sendOrders, stateChanMaster)
+			go bcast.Transmitter("255.255.255.255",20008, sendOrders, stateChanMaster)
 			go bcast.Receiver(20009, listenForOrders, callback)
 			go bcast.Transmitter( myIP,20010, newOrderChanBackup, newStateChanBackup)
 
-			go ListenLocalOrders(callback, sendOrders, orderChan, otherOrderChan)
-			go ExecuteOrder(orderChan, otherOrderChan, sendOrders)
+			go ListenLocalOrders(sendOrders, orderChan, otherOrderChan, callback)
+			go ExecuteOrder(orderChan, otherOrderChan, sendOrders, callback)
 			go ListenRemoteOrders(listenForOrders, orderChan, otherOrderChan)
 
 //notifying I'm alive
@@ -279,7 +292,7 @@ func Slave(isBackup bool) {
 					stateChanMaster <- thisElevator
 					orderSlice = <-orderChan
 					orderChan <- orderSlice
-					fmt.Println(orderSlice)
+				//	fmt.Println(orderSlice)
 
 					time.Sleep(1000 * time.Millisecond)
 

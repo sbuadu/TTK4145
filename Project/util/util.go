@@ -4,7 +4,7 @@ import (
 	"time"
 )
 
-const Nslaves = 1
+const Nslaves = 2
 const Nfloors = 4
 const DoorOpenTime = 1000 * time.Millisecond
 const Nbuttons = 3

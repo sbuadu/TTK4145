@@ -93,6 +93,10 @@ func PrioritizeOrder(order util.Order, orderSlice []util.Order, elevator util.El
 func FindSuitableElevator(slaves []util.Elevator, order util.Order) util.Elevator {
 	elevIndex := 0
 	bestCost := 0
+	if order.FromButton.TypeOfButton == 2{
+		return order.ThisElevator
+	}
+
 	for i := 0; i < len(slaves); i++ {
 		cost := calculateCost(slaves[i], order)
 		if cost > bestCost {
