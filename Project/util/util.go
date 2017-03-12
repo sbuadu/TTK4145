@@ -6,6 +6,7 @@ import (
 
 const Nslaves = 3
 const Nfloors = 4
+const DoorOpenTime = 1000 * time.Millisecond
 
 type Direction int
 
@@ -16,10 +17,10 @@ const (
 )
 
 type Order struct {
-	ThisElevator Elevator
-	FromButton   Button
-	AtTime       time.Time
-	Completed 	 bool
+	ThisElevator	Elevator
+	FromButton	Button
+	AtTime		time.Time
+	Completed	bool
 
 }
 
@@ -32,4 +33,3 @@ type Button struct {
 	Floor, TypeOfButton int
 }
 
-const DoorOpenTime = 1000 * time.Millisecond

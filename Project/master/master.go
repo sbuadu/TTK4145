@@ -15,7 +15,7 @@ var slaveIPs = [util.Nslaves]string{"129.241.187.161", "129.241.187.156","255.25
 var slaveAlive [util.Nslaves]bool
 
 func InitSlave(IP string) {
-	spawnSlave := exec.Command("gnome-terminal", "-x", "sh", "-c", "nohup ssh student@", IP, "go run /home/student/Documents/Group55/TTK4145/Project/main.go -startSlave")
+	spawnSlave := exec.Command("gnome-terminal", "-x", "sh", "-c", "sshpass -p 'Sanntid15' ssh student@", IP, "go run /home/student/Documents/Group55/TTK4145/Project/main.go -startSlave")
 	spawnSlave.Start()
 }
 
@@ -56,6 +56,8 @@ func Master(isBackup bool) {
 	//local process channels
 	slavesChan := make(chan [util.Nslaves]util.Elevator)
 	orderChan := make(chan [util.Nslaves][]util.Order)
+	orderBackupChan := make(chan [util.Nslaves][]util.Order)
+	slavesBackupChan := make(chan [util.Nslaves]util.Elevator)
 	slaveAliveChan := make(chan [util.Nslaves]bool)
 
 	slavesChan <- slaves
@@ -78,7 +80,7 @@ func Master(isBackup bool) {
 			for {
 				orders =<-ordersFromMaster
 				slaves =<-statusFromMaster
-				slaveAlive =<-slaveAliveFromMaster 
+				slaveAlive =<-slaveAliveFromMaster
 				tmr.Reset(5 * time.Second)
 			}
 			}()
@@ -104,9 +106,9 @@ func Master(isBackup bool) {
 				myIP, _ := localip.LocalIP()
 				for i:=0;i<len(slaveIPs);i++{
 					if slaveIPs[i] != myIP && slaveAlive[i] {
-						spawnMasterBackup := exec.Command("gnome-terminal", "-x", "sh", "-c", "nohup ssh student@", slaveIPs[i], "go run /home/student/Documents/Group55/TTK4145/Project/main.go -startMasterBackup")
+						spawnMasterBackup := exec.Command("gnome-terminal", "-x", "sh", "-c", "sshpass -p 'Sanntid15' ssh student@", slaveIPs[i], "go run /home/student/Documents/Group55/TTK4145/Project/main.go -startMasterBackup")
 						spawnMasterBackup.Start()
-						return
+						break
 					}
 				}
 				}()
@@ -140,7 +142,6 @@ func Master(isBackup bool) {
 					}
 				}
 			}
-		
 
 		//start backup master on remote pc, take first in list that is not itself
 		for i:=0;i<len(slaveIPs);i++{
@@ -156,6 +157,18 @@ func Master(isBackup bool) {
 		go bcast.Receiver(20009, orderChannel, orderSliceChannel, statusChannel)
 			//should all these channels have different names??
 		go distributeOrder(orderChannel, sendOrder, orderChan)
+		go bcast.Transmitter(20011,orderBackupChan, slavesBackupChan)
+		go func() {
+			for {
+				orders =<-orderChan
+				orderChan <- orders
+				orderBackupChan <- orders
+				slaves =<-slavesChan
+				slavesChan <- slaves
+				slavesBackupChan <- slaves
+				time.Sleep(1*time.Second)
+			}
+		}()
 
 		//updating info from slave
 		go func() {
