@@ -8,6 +8,7 @@ import (
 "time"
 "fmt"
 "../orderManagement"
+"bytes"
 )
 
 var slaveIPs = [util.Nslaves]string{"129.241.187.157", "129.241.187.153"}
@@ -15,8 +16,15 @@ var slaveIPs = [util.Nslaves]string{"129.241.187.157", "129.241.187.153"}
 
 //tested: works
 func InitSlave(IP string) {
-	spawnSlave := exec.Command("gnome-terminal", "-x", "sh", "-c", "sshpass -p Sanntid15 ssh student@", IP, " go run /home/student/Documents/Group55/TTK4145/Project/main.go -startSlave")
-	spawnSlave.Start()
+	spawnSlave := exec.Command("bash","./startSlave.sh",IP,"-startSlave")
+	//spawnSlave := exec.Command("sshpass -p Sanntid15 ssh student@", IP, " go run /home/student/Documents/Group55/TTK4145/Project/main.go -startSlave")
+	//spawnSlave := exec.Command("sshpass", "-p", "Sanntid15","ssh","student@",IP,"go run /home/student/Documents/Group55/TTK4145/Project/main.go -startSlave")
+	 var out bytes.Buffer
+    spawnSlave.Stdout = &out
+    err := spawnSlave.Start()
+    if err != nil {
+        fmt.Println(err)
+    }
 }
 
 //tested: works
@@ -67,7 +75,9 @@ func DistributeIncompleteOrder(order util.Order, sendOrders chan util.Order, sla
 			for {
 				fmt.Println("starting the distribution")
 				order :=<- orderChannel
+				fmt.Println("here")
 				callback <- order.AtTime
+
 				if order.Completed { //removing the completed order from the backup slice
 					go sendOrder(order, sendOrders)
 					for i :=0;i<util.Nslaves;i++{
@@ -174,12 +184,12 @@ func Master(isBackup bool) {
 
 			if  slaves[0].IP == ""{ //if slaves arent initialized, initialize 
 				for i := 0; i < util.Nslaves; i++ {
-						InitSlave(slaveIPs[i])
-					/*
-					if myIP != slaveIPs[i] {
+					
+					
+					//if myIP != slaveIPs[i] {
 						InitSlave(slaveIPs[i])
 						
-					}else{
+					/*}else{
 						//test if this can be done in initSlave
 						spawnBackup := exec.Command("gnome-terminal", "-x", "sh", "-c", "go run /home/student/Documents/Group55/TTK4145/Project/main.go -startSlave")
 						spawnBackup.Start()
@@ -194,6 +204,7 @@ func Master(isBackup bool) {
 					fmt.Println("Started slave on ", slaves[i].IP)
 				}
 				fmt.Println("here")
+
 				slaveAliveBackupChan <- slaveAlive
 			}
 		//Settig up timers for slaves
