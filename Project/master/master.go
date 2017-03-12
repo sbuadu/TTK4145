@@ -84,9 +84,9 @@ func DistributeIncompleteOrder(order util.Order, sendOrders chan util.Order, sla
 			}
 		}
 
-		func Master(isBackup bool) {
-			var slaves [util.Nslaves]util.Elevator
-			var slaveAlive [util.Nslaves]bool
+func Master(isBackup bool) {
+	var slaves [util.Nslaves]util.Elevator
+	var slaveAlive [util.Nslaves]bool
 	var orders  [util.Nslaves][]util.Order	//A backup of all orders the slaves are to complete
 
 
@@ -134,43 +134,43 @@ func DistributeIncompleteOrder(order util.Order, sendOrders chan util.Order, sla
 				//slaveAlive =<-slaveAliveFromMaster //this is not done as often as the two others, should be moved.. 
 				tmr.Reset(5 * time.Second)
 			}
-			}()
+		}()
 
-			go func{
-				slaveAlive =<- slaveAliveFromMaster
-				}()
+		go func{
+			slaveAlive =<- slaveAliveFromMaster
+		}()
 
 
-				go func () {
-					<-tmr.C
-					isBackup = false
-					firstTry = true
-					select{
-					case <- slavesChan:
-					default:
-					}
-					select {
-					case <- orderChan:
-					default:
-					}
-					select {
-					case <- slaveAliveChan:
-					default:
-					}
-					slavesChan <-slaves
-					orderChan <- orders
-					slaveAliveChan <- slaveAlive
-				//myIP, _ := localip.LocalIP()
-				/*
-				for i:=0;i<len(slaveIPs);i++{
-					if slaveIPs[i] != myIP && slaveAlive[i] {
-						spawnMasterBackup := exec.Command("gnome-terminal", "-x", "sh", "-c", "sshpass -p 'Sanntid15' ssh student@", slaveIPs[i], "go run /home/student/Documents/Group55/TTK4145/Project/main.go -startMasterBackup")
-						spawnMasterBackup.Start()
-						break
-					}
-					}*/
-					}()
+		go func () {
+			<-tmr.C
+			isBackup = false
+			firstTry = true
+			select{
+				case <- slavesChan:
+				default:
+			}
+			select {
+				case <- orderChan:
+				default:
+			}
+			select {
+				case <- slaveAliveChan:
+				default:
+			}
+			slavesChan <-slaves
+			orderChan <- orders
+			slaveAliveChan <- slaveAlive
+
+			myIP, _ := localip.LocalIP()
+			for i:=0;i<len(slaveIPs);i++{
+				if slaveIPs[i] != myIP && slaveAlive[i] {
+					spawnMasterBackup := exec.Command("gnome-terminal", "-x", "sh", "-c", "sshpass -p 'Sanntid15' ssh student@", slaveIPs[i], "go run /home/student/Documents/Group55/TTK4145/Project/main.go -startMasterBackup")
+					spawnMasterBackup.Start()
+					break
 				}
+			}
+			()
+		}
 
 			//tested:
 				if !isBackup && firstTry {
@@ -258,7 +258,7 @@ func DistributeIncompleteOrder(order util.Order, sendOrders chan util.Order, sla
 					}
 					}()
 
-		//tested: works
+		//must test if works nomatter which order the slave IPs are listed
 		// checking for non-responsive slaves and working accordingly
 					go func(){
 						for {
