@@ -209,7 +209,7 @@ func DistributeIncompleteOrder(order util.Order, sendOrders chan util.Order, ord
 					if slaveIPs[i] != myIP && slaveAlive[i]{
 						backupIP = slaveIPs[i]
 						fmt.Println("Spawning a backup on IP", backupIP)
-						spawnMasterBackup := exec.Command("gnome-terminal", "-x", "sh", "-c", "sshpass -p Sanntid15 ssh student@", slaveIPs[i], " go run /home/student/Documents/Group55/TTK4145/Project/main.go -startMasterBackup")
+						spawnMasterBackup := exec.Command("bash","./startSlave.sh",IP,"-startMasterBackup")
 						spawnMasterBackup.Start()
 						break
 					}
