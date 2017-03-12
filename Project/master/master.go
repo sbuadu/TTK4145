@@ -96,9 +96,9 @@ func DistributeIncompleteOrder(order util.Order, sendOrdersChannel chan util.Ord
 			}
 		}
 
-		func MasterLoop(isBackup bool) {
-			var slaves [util.Nslaves]util.Elevator
-			var slaveAlive [util.Nslaves]bool
+func MasterLoop(isBackup bool) {
+	var slaves [util.Nslaves]util.Elevator
+	var slaveAlive [util.Nslaves]bool
 	var orders  [util.Nslaves][]util.Order	//A backup of all orders the slaves are to complete
 
 
