@@ -25,8 +25,6 @@ func SendOrder(order util.Order, sendOrders chan util.Order, orderChan , otherOr
 			case 	timestamp := <-callback: 
 			if timestamp == order.AtTime{
 			sendSuccess = true
-			
-
 		}
 		default: 
 	}

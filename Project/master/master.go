@@ -72,7 +72,7 @@ func DistributeIncompleteOrder(order util.Order, sendOrdersChannel chan util.Ord
 		}
 //tested: works
 		func distributeOrder(orderChannel, sendOrdersChannel chan util.Order, orderChan chan [util.Nslaves][]util.Order, slaveAliveChan chan [util.Nslaves]bool, slavesChan chan [util.Nslaves]util.Elevator, callbackChannel chan time.Time) {
-			for {
+			for {qqq
 				order :=<- orderChannel
 
 				callbackChannel <- order.AtTime
