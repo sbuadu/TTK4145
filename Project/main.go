@@ -45,7 +45,7 @@ func main() {
 	//exec.Command("gnome-terminal", "-x", "go run ~/Documents/TTK4145/Exercise6/backup.go")
 	//startSlave.Start()
 	if *startMaster {
-		fmt.Println("starting master")
+		fmt.Println("Starting Master")
 		go master.Master(false)
 	}
 	if *startMasterBackup {

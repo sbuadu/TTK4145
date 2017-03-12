@@ -14,15 +14,15 @@ import (
 
 
 func SendOrder(order util.Order, sendOrders chan util.Order, orderChan , otherOrderChan chan []util.Order) {
-	if len(sendOrders) < cap(sendOrders) {
-		sendOrders <- order
-	} else if !order.Completed {
+	sendOrders <- order
+	fmt.Println("Sent order")
+	/*if !order.Completed {
 		success := orderManagement.AddOrder(orderChan, otherOrderChan, order.FromButton.Floor, order.FromButton.TypeOfButton, order.ThisElevator, order.AtTime)
 		if success == 1 {
 			driver.SetButtonLamp(order.FromButton.Floor, order.FromButton.TypeOfButton, 1)
 
 		}
-	}
+	}*/
 }
 
 func ListenRemoteOrders(listenForOrders chan util.Order, orderChan, otherOrderChan chan []util.Order) {
@@ -31,6 +31,7 @@ func ListenRemoteOrders(listenForOrders chan util.Order, orderChan, otherOrderCh
 	for {
 
 		order := <-listenForOrders
+		//fmt.Println("Received order from master: ", order)
 		if order.ThisElevator.IP == thisElevator.IP { //the elevator should complete the order itself
 
 			if !order.Completed{ 	//order to be completed
@@ -76,7 +77,9 @@ func ListenLocalOrders(callback chan time.Time, sendOrders chan util.Order, orde
 		if changed {
 			if button == 0 || button == 1 { //external order
 				order := util.Order{thisElevator, util.Button{floor, button}, time.Now(), false}
+				fmt.Println("sending order")
 				go SendOrder(order, sendOrders, orderChan, otherOrderChan)
+				time.Sleep(700*time.Millisecond)
 			} else { //internal order
 				success := orderManagement.AddOrder(orderChan, otherOrderChan, floor, button, thisElevator, time.Now())
 				if success == 1 {
@@ -86,7 +89,7 @@ func ListenLocalOrders(callback chan time.Time, sendOrders chan util.Order, orde
 			}
 			changed = false
 		}
-		time.Sleep(10 * time.Millisecond)
+		time.Sleep(100 * time.Millisecond)
 	}
 }
 func goToFloor(order util.Order, currentFloor int) {
@@ -213,7 +216,7 @@ func Slave(isBackup bool) {
 						if isBackup {
 
 							thisElevator = <-stateChanBackup
-
+							fmt.Println("Elevator at floor", thisElevator.LastFloor)
 							tmr.Reset(5 * time.Second)
 						} else {
 							return
@@ -241,6 +244,7 @@ func Slave(isBackup bool) {
 						}
 
 						if !isBackup && firstTry {
+							myIP, _ := localip.LocalIP()
 							firstTry = false
 							driver.InitElevator()
 							orderSlice := <-orderChan
@@ -252,12 +256,12 @@ func Slave(isBackup bool) {
 							fmt.Println("I'm a slave now")
 							newStateChanBackup := make(chan util.Elevator, 1)
 							newOrderChanBackup := make(chan []util.Order, 1)
-							orderChanMaster := make(chan []util.Order, 1)  //used to send updates on order slice to master
-							stateChanMaster := make(chan util.Elevator, 1) // used to send updates on the elevators state to master
+							//orderChanMaster := make(chan []util.Order,1)  //used to send updates on order slice to master
+							stateChanMaster := make(chan util.Elevator,1) // used to send updates on the elevators state to master
 
-							go bcast.Transmitter(20009, sendOrders, orderChanMaster, stateChanMaster)
+							go bcast.Transmitter("255.255.255.255",20009, sendOrders, stateChanMaster)
 							go bcast.Receiver(20009, listenForOrders, callback)
-							go bcast.Transmitter(20010, newOrderChanBackup, newStateChanBackup)
+							go bcast.Transmitter( myIP,20010, newOrderChanBackup, newStateChanBackup)
 
 							go ListenLocalOrders(callback, sendOrders, orderChan, otherOrderChan)
 							go ExecuteOrder(orderChan, otherOrderChan, sendOrders)
@@ -270,17 +274,16 @@ func Slave(isBackup bool) {
 									select {
 									case <-newStateChanBackup:
 									case <- stateChanMaster:
-									case <- orderChanMaster:
-									default:
+											default:
 									}
 									newStateChanBackup <- thisElevator
-
+									stateChanMaster <- thisElevator
+									
+									
 									orderSlice = <-orderChan
 									newOrderChanBackup <- orderSlice
 									orderChan <- orderSlice
-									stateChanMaster <- thisElevator
-									orderChanMaster <- orderSlice
-									fmt.Println("Updated backup and master")
+									fmt.Println(orderSlice)
 
 									time.Sleep(1000 * time.Millisecond)
 
