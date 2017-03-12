@@ -11,7 +11,7 @@ import (
 "bytes"
 )
 
-var slaveIPs = [util.Nslaves]string{"129.241.187.157", "129.241.187.153"}
+var slaveIPs = [util.Nslaves]string{"129.241.187.153"}
 // var slaveIPs = [util.Nslaves]string{"129.241.187.153"}
 
 //tested: works
