@@ -100,7 +100,7 @@ func Master(isBackup bool) {
 	//local process channels
 	slavesChan := make(chan [util.Nslaves]util.Elevator,1)
 	orderChan := make(chan [util.Nslaves][]util.Order,1)
-	slaceAliveChan := make(chan [util.Nslaves]bool, 1)
+	slaveAliveChan := make(chan [util.Nslaves]bool, 1)
 
 	//channels for communication with backup
 	orderBackupChan := make(chan [util.Nslaves][]util.Order,1)
@@ -136,7 +136,7 @@ func Master(isBackup bool) {
 			}
 		}()
 
-		go func{
+		go func(){
 			slaveAlive =<- slaveAliveFromMaster
 		}()
 
@@ -169,8 +169,7 @@ func Master(isBackup bool) {
 					break
 				}
 			}
-			()
-		}
+		}()
 
 			//tested:
 				if !isBackup && firstTry {
@@ -198,7 +197,7 @@ func Master(isBackup bool) {
 					slaveAliveChan <- slaveAlive
 					fmt.Println("Started slave on ", slaves[i].IP)
 				}
-				slavesBackupChan <- slaveAliveChan
+				slaveAliveBackupChan <- slaveAlive
 			}
 		//Settig up timers for slaves
 			var timers [util.Nslaves] *time.Timer
@@ -220,7 +219,7 @@ func Master(isBackup bool) {
 		//Set up communication
 			go bcast.Transmitter("255.255.255.255",20009, sendOrders, callback)
 			go bcast.Receiver(20008, orderChannel, statusChannel)
-			go bcast.Transmitter(backupIP,20011,orderBackupChan, slavesBackupChanm slaveAliveBackupChan)
+			go bcast.Transmitter(backupIP,20011,orderBackupChan, slavesBackupChan, slaveAliveBackupChan)
 
 
 			go distributeOrder(orderChannel, sendOrders, orderChan,slaveAliveChan,slavesChan, callback)
@@ -293,3 +292,4 @@ func Master(isBackup bool) {
 
 				}
 
+}
