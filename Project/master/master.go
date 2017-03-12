@@ -127,16 +127,16 @@ func DistributeIncompleteOrder(order util.Order, sendOrders chan util.Order, ord
 	}
 	firstTry := true
 
-
-		//tested: 
+	for {		
+	//tested:
 	if isBackup && firstTry {
 		fmt.Println("I am a master backup")
 		firstTry = false
 		tmr := time.NewTimer(5 * time.Second)
 		//listening to master	
-		ordersFromMaster := make(chan [util.Nslaves][]util.Order)
-		statusFromMaster := make(chan [util.Nslaves]util.Elevator)
-		slaveAliveFromMaster := make(chan [util.Nslaves]bool)
+		ordersFromMaster := make(chan [util.Nslaves][]util.Order,1)
+		statusFromMaster := make(chan [util.Nslaves]util.Elevator,1)
+		slaveAliveFromMaster := make(chan [util.Nslaves]bool,1)
 		go bcast.Receiver(20011, ordersFromMaster, statusFromMaster,slaveAliveFromMaster)
 		go func() {
 			for {
@@ -157,6 +157,7 @@ func DistributeIncompleteOrder(order util.Order, sendOrders chan util.Order, ord
 					<-tmr.C
 					isBackup = false
 					firstTry = true
+					fmt.Println("Master is dead, dobby is free!")
 					select{
 					case <- slavesChan:
 					default:
@@ -209,7 +210,7 @@ func DistributeIncompleteOrder(order util.Order, sendOrders chan util.Order, ord
 					if slaveIPs[i] != myIP && slaveAlive[i]{
 						backupIP = slaveIPs[i]
 						fmt.Println("Spawning a backup on IP", backupIP)
-						spawnMasterBackup := exec.Command("bash","./startSlave.sh",IP,"-startMasterBackup")
+						spawnMasterBackup := exec.Command("bash","./startSlave.sh",backupIP,"-startMasterBackup")
 						spawnMasterBackup.Start()
 						break
 					}
@@ -232,13 +233,17 @@ func DistributeIncompleteOrder(order util.Order, sendOrders chan util.Order, ord
 						orderChan <- orders
 						slaves =<-slavesChan
 						slavesChan <- slaves
-
+						select{
+						case <-orderBackupChan:
+						case <- slavesBackupChan:
+						default:
+						}
 						orderBackupChan <- orders	
 						slavesBackupChan <- slaves
 
 						time.Sleep(1*time.Second)
 					}
-					}()
+				}()
 
 		//tested: works
 		//updating info from slave
@@ -288,6 +293,8 @@ func DistributeIncompleteOrder(order util.Order, sendOrders chan util.Order, ord
 							}()
 
 						}
+						time.Sleep(1*time.Second)
+					}
 
 					}
 
