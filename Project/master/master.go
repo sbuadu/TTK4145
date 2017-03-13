@@ -211,7 +211,7 @@ func MasterLoop(isBackup bool) {
                     if slaveIPs[i] != myIP {
                         backupIP = slaveIPs[i]
                         fmt.Println("Starting a backup on IP", backupIP)
-                        spawnMasterBackup := exec.Command("bash","./startProcess.sh",backupIP,"-startMasterBackup")
+                        spawnMasterBackup := exec.Command("bash","./startProcess.sh ",backupIP," -startMasterBackup")
                         spawnMasterBackup.Start()
                         break
                     }
