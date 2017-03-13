@@ -187,14 +187,14 @@ func MasterLoop(isBackup bool) {
 
 			if  slaves[0].IP == ""{ //if slaves arent initialized, initialize 
 				for i := 0; i < util.Nslaves; i++ {
-					InitSlave(slaveIPs[i])
+					//InitSlave(slaveIPs[i])
 						slaves = <-slavesChan
 						slaves[i] = util.Elevator{slaveIPs[i],0,2}
 						slavesChan <- slaves
 						slaveAlive =<-slaveAliveChan
 						slaveAlive[i] = true
 						slaveAliveChan <- slaveAlive
-						fmt.Println("Started slave on ", slaves[i].IP)
+						fmt.Println("I belive there are slaves on ", slaves[i].IP)
 					}
 					slaveAliveBackupChan <- slaveAlive
 				}
