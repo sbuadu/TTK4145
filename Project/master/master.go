@@ -208,7 +208,7 @@ func MasterLoop(isBackup bool) {
                 for i:=0;i<len(slaveIPs);i++{
                     slaveAlive =<-slaveAliveChan
                     slaveAliveChan <- slaveAlive
-                    if slaveIPs[i] != myIP && slaveAlive[i]{
+                    if slaveIPs[i] != myIP {
                         backupIP = slaveIPs[i]
                         fmt.Println("Expexting a backup on IP", backupIP)
                         //spawnMasterBackup := exec.Command("bash","./startSlave.sh",backupIP,"-startMasterBackup")
