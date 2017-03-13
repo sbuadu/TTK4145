@@ -71,35 +71,9 @@ func DistributeIncompleteOrder(order util.Order, sendOrdersChannel chan util.Ord
 			}
 		}
 //tested: works
-		func distributeOrder(orderChannel, sendOrdersChannel chan util.Order, orderChan chan [util.Nslaves][]util.Order, slaveAliveChan chan [util.Nslaves]bool, slavesChan chan [util.Nslaves]util.Elevator, callbackChannel chan time.Time) {
-			for {
-				order :=<- orderChannel
-
-    order.ThisElevator = orderManagement.FindSuitableElevator(order, workingSlaves)
-    fmt.Print("This elevator: ",order.ThisElevator.IP)
-    fmt.Println("  should go to floor:" ,order.FromButton.Floor)
-    go sendOrder(order, sendOrdersChannel)
-
-            for i :=0;i<util.Nslaves;i++{ //adding the order to the right backup slice
-                if order.ThisElevator.IP == slaveIPs[i]{
-                    orders := <-orderChan
-                    tempChan := make(chan []util.Order,1)
-                    tempChan <- orders[i]
-                    dummyChan := make(chan []util.Order,1)
-                    dummySlice := make([]util.Order,0)
-                    dummyChan <- dummySlice
-
-                    orderManagement.AddOrder(tempChan, dummyChan, order.FromButton.Floor, order.FromButton.TypeOfButton, order.ThisElevator, order.AtTime)
-                    orders[i] = <-tempChan
-                    orderChan <- orders
-
-                }
-
-            }
-        }
 //tested: works
         func distributeOrder(orderChannel, sendOrdersChannel chan util.Order, orderChan chan [util.Nslaves][]util.Order, slaveAliveChan chan [util.Nslaves]bool, slavesChan chan [util.Nslaves]util.Elevator, callbackChannel chan time.Time) {
-            for {qqq
+            for {
                 order :=<-orderChannel
                 callbackChannel <- order.AtTime
 
