@@ -200,7 +200,7 @@ func MasterLoop(isBackup bool) {
 
 			//Set up communication
 			go bcast.Transmitter("255.255.255.255", 20009, sendOrdersChannel, callbackChannel)
-			go bcast.Receiver(20008, orderChannel, statusChannel)
+			go bcast.Receiver(20009, orderChannel, statusChannel)
 			go bcast.Transmitter("255.255.255.255", 20011, orderBackupChan, slavesBackupChan, slaveAliveBackupChan)
 
 			go receiveOrder(orderChannel, sendOrdersChannel, orderChan, slaveAliveChan, slavesChan, callbackChannel)

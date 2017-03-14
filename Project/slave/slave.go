@@ -315,7 +315,7 @@ func SlaveLoop(isBackup bool) {
 			newOrderChanBackup := make(chan []util.Order, 1)
 			stateChanMaster := make(chan util.Elevator, 1)
 
-			go bcast.Transmitter("255.255.255.255", 20008, sendOrders, stateChanMaster)
+			go bcast.Transmitter("255.255.255.255", 20009, sendOrders, stateChanMaster)
 			go bcast.Receiver(20009, listenForOrders, callback)
 			go bcast.Transmitter(myIP, 20010, newOrderChanBackup, newStateChanBackup)
 
