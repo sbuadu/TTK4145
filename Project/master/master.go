@@ -8,8 +8,13 @@ import (
     "time"
 )
 
-/* MASTER MODULE
-The master module works as a supervisor of the elevators operations
+/*
+Module: Master
+
+date: 14.03.17
+
+
+This module works as a supervisor of the elevators operations
 and is resposible for assigning orders to individual elevators
 
 */

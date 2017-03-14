@@ -5,9 +5,10 @@ import (
 	"math"
 	"time"
 )
-
 /*
-ORDER MANAGEMENT MODULE
+Module: Order Management
+
+date: 14.03.17
 
 This module contains functions for handeling orders and orderslices.
 It is a module supporting both the master and slave module.
