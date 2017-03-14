@@ -12,10 +12,8 @@ date: 14.03.17
 
 This module contains functions for handeling orders and orderslices.
 It is a module supporting both the master and slave module.
-
 */
 
-var orderSlice = make([]util.Order, 0) //slice of orders
 
 func AddOrder(orderChan, otherOrderChan chan []util.Order, floor, button int, elevator util.Elevator, atTime time.Time) int {
 
@@ -28,7 +26,7 @@ func AddOrder(orderChan, otherOrderChan chan []util.Order, floor, button int, el
 		otherOrderChan <- otherOrders
 		return 0
 	} else {
-		orderSlice = PrioritizeOrder(order, orderSlice, elevator)
+		orderSlice = prioritizeOrder(order, orderSlice, elevator)
 		orderChan <- orderSlice
 		otherOrderChan <- otherOrders
 		return 1
@@ -58,7 +56,7 @@ func duplicateOrder(order util.Order, orderSlice []util.Order) bool {
 	return false
 }
 
-func PrioritizeOrder(order util.Order, orderSlice []util.Order, elevator util.Elevator) []util.Order {
+func prioritizeOrder(order util.Order, orderSlice []util.Order, elevator util.Elevator) []util.Order {
 
 	if len(orderSlice) < 1 { //if no other orders
 

@@ -16,12 +16,10 @@ Module: slave
 
 date: 14.03.17
 
-
 This module handles the operation of the individual elevator.
-
 */
 
-func SendOrder(order util.Order, sendOrders chan util.Order, orderChan, otherOrderChan chan []util.Order, callback chan time.Time) {
+func sendOrder(order util.Order, sendOrders chan util.Order, orderChan, otherOrderChan chan []util.Order, callback chan time.Time) {
 	sendOrders <- order
 	fmt.Println("Sent order")
 	sendSuccess := false
@@ -47,7 +45,7 @@ func SendOrder(order util.Order, sendOrders chan util.Order, orderChan, otherOrd
 }
 
 //TODO: Must check if light is lit if another elevator is taking the order
-func ListenRemoteOrders(listenForOrders chan util.Order, orderChan, otherOrderChan chan []util.Order) {
+func listenRemoteOrders(listenForOrders chan util.Order, orderChan, otherOrderChan chan []util.Order) {
 
 	for {
 
@@ -87,7 +85,7 @@ func ListenRemoteOrders(listenForOrders chan util.Order, orderChan, otherOrderCh
 	}
 }
 
-func ListenLocalOrders(sendOrders chan util.Order, orderChan, otherOrderChan chan []util.Order, callback chan time.Time) {
+func listenLocalOrders(sendOrders chan util.Order, orderChan, otherOrderChan chan []util.Order, callback chan time.Time) {
 
 	var buttons [util.Nfloors][util.Nbuttons]int
 	for {
@@ -98,7 +96,7 @@ func ListenLocalOrders(sendOrders chan util.Order, orderChan, otherOrderChan cha
 
 		if changed {
 			order := util.Order{thisElevator, util.Button{floor, button}, time.Now(), false}
-			go SendOrder(order, sendOrders, orderChan, otherOrderChan, callback)
+			go sendOrder(order, sendOrders, orderChan, otherOrderChan, callback)
 			time.Sleep(700 * time.Millisecond)
 		}
 		changed = false
@@ -132,7 +130,7 @@ func goToFloor(order util.Order, currentFloor int) {
 	driver.SetDoorLamp(1)
 }
 
-func ExecuteOrder(sendOrders chan util.Order, orderChan, otherOrderChan chan []util.Order, callback chan time.Time) {
+func executeOrder(sendOrders chan util.Order, orderChan, otherOrderChan chan []util.Order, callback chan time.Time) {
 
 	currentFloor := driver.GetCurrentFloor()
 	if currentFloor == -1 {
@@ -158,7 +156,7 @@ func ExecuteOrder(sendOrders chan util.Order, orderChan, otherOrderChan chan []u
 			orderSlice = orderManagement.RemoveOrder(currentOrder, orderSlice)
 			orderChan <- orderSlice
 			currentOrder.Completed = true
-			SendOrder(currentOrder, sendOrders, orderChan, otherOrderChan, callback)
+			sendOrder(currentOrder, sendOrders, orderChan, otherOrderChan, callback)
 		} else {
 
 			orderChan <- orderSlice
@@ -300,9 +298,9 @@ func SlaveLoop(isBackup bool) {
 			go bcast.Receiver(20009, listenForOrders, callback)
 			go bcast.Transmitter(myIP, 20010, newOrderChanBackup, newStateChanBackup)
 
-			go ListenLocalOrders(sendOrders, orderChan, otherOrderChan, callback)
-			go ExecuteOrder(sendOrders, orderChan, otherOrderChan, callback)
-			go ListenRemoteOrders(listenForOrders, orderChan, otherOrderChan)
+			go listenLocalOrders(sendOrders, orderChan, otherOrderChan, callback)
+			go executeOrder(sendOrders, orderChan, otherOrderChan, callback)
+			go listenRemoteOrders(listenForOrders, orderChan, otherOrderChan)
 
 			//notifying I'm alive
 			//updating orderSlice backups
@@ -326,7 +324,7 @@ func SlaveLoop(isBackup bool) {
 				}
 			}()
 
-			//Checking for old remote orders are run out
+			//Checking for long-time incompleted orders 
 			go func() {
 				for {
 

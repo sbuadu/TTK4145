@@ -14,12 +14,11 @@ Module: Master
 date: 14.03.17
 
 
-This module works as a supervisor of the elevators operations
-and is resposible for assigning orders to individual elevators
+This module works as a supervisor of the elevators and their operation.
+It is also resposible for assigning orders to individual elevators
 
 */
 
-var slaveIPs = [util.Nslaves]string{"129.241.187.148", "129.241.187.144"}
 
 
 
@@ -30,7 +29,7 @@ func sendOrder(order util.Order, sendOrdersChannel chan util.Order) {
 	}
 }
 
-func DistributeIncompleteOrder(order util.Order, sendOrdersChannel chan util.Order, orderChan chan [util.Nslaves][]util.Order, slaveAliveChan chan [util.Nslaves]bool, slavesChan chan [util.Nslaves]util.Elevator) {
+func distributeOrder(order util.Order, sendOrdersChannel chan util.Order, orderChan chan [util.Nslaves][]util.Order, slaveAliveChan chan [util.Nslaves]bool, slavesChan chan [util.Nslaves]util.Elevator) {
 	var workingSlaves = make([]util.Elevator, 0)
 
 	for i := 0; i < util.Nslaves; i++ {
@@ -50,7 +49,7 @@ func DistributeIncompleteOrder(order util.Order, sendOrdersChannel chan util.Ord
 
 	//adding the order to the right backup slice
 	for i := 0; i < util.Nslaves; i++ {
-		if order.ThisElevator.IP == slaveIPs[i] {
+		if order.ThisElevator.IP == util.SlaveIPs[i] {
 			orders := <-orderChan
 			tempChan := make(chan []util.Order, 1)
 			tempChan <- orders[i]
@@ -67,7 +66,7 @@ func DistributeIncompleteOrder(order util.Order, sendOrdersChannel chan util.Ord
 	}
 }
 
-func distributeOrder(orderChannel, sendOrdersChannel chan util.Order, orderChan chan [util.Nslaves][]util.Order, slaveAliveChan chan [util.Nslaves]bool, slavesChan chan [util.Nslaves]util.Elevator, callbackChannel chan time.Time) {
+func receiveOrder(orderChannel, sendOrdersChannel chan util.Order, orderChan chan [util.Nslaves][]util.Order, slaveAliveChan chan [util.Nslaves]bool, slavesChan chan [util.Nslaves]util.Elevator, callbackChannel chan time.Time) {
 	for {
 		order := <-orderChannel
 		callbackChannel <- order.AtTime
@@ -76,7 +75,7 @@ func distributeOrder(orderChannel, sendOrdersChannel chan util.Order, orderChan 
 		if order.Completed {
 			go sendOrder(order, sendOrdersChannel)
 			for i := 0; i < util.Nslaves; i++ {
-				if order.ThisElevator.IP == slaveIPs[i] {
+				if order.ThisElevator.IP == util.SlaveIPs[i] {
 					orders := <-orderChan
 					orders[i] = orderManagement.RemoveOrder(order, orders[i])
 					orderChan <- orders
@@ -88,7 +87,7 @@ func distributeOrder(orderChannel, sendOrdersChannel chan util.Order, orderChan 
 
 		} else {
 
-			DistributeIncompleteOrder(order, sendOrdersChannel, orderChan, slaveAliveChan, slavesChan)
+			distributeOrder(order, sendOrdersChannel, orderChan, slaveAliveChan, slavesChan)
 
 		}
 	}
@@ -185,9 +184,8 @@ func MasterLoop(isBackup bool) {
 
 			if slaves[0].IP == "" { //if slaves arent initialized, initialize
 				for i := 0; i < util.Nslaves; i++ {
-					//InitSlave(slaveIPs[i])
 					slaves = <-slavesChan
-					slaves[i] = util.Elevator{slaveIPs[i], 0, 2}
+					slaves[i] = util.Elevator{util.SlaveIPs[i], 0, 2}
 					slavesChan <- slaves
 					slaveAlive = <-slaveAliveChan
 					slaveAlive[i] = true
@@ -209,7 +207,7 @@ func MasterLoop(isBackup bool) {
             go bcast.Receiver(20008, orderChannel, statusChannel)
             go bcast.Transmitter("255.255.255.255", 20011, orderBackupChan, slavesBackupChan, slaveAliveBackupChan)
 
-            go distributeOrder(orderChannel, sendOrdersChannel, orderChan, slaveAliveChan, slavesChan, callbackChannel)
+            go receiveOrder(orderChannel, sendOrdersChannel, orderChan, slaveAliveChan, slavesChan, callbackChannel)
 
 			//sending updates to backup
             go func() {
@@ -235,7 +233,7 @@ func MasterLoop(isBackup bool) {
                 for {
                     status := <-statusChannel
                     for i := 0; i < util.Nslaves; i++ {
-                        if status.IP == slaveIPs[i] {
+                        if status.IP == util.SlaveIPs[i] {
                             slaves = <-slavesChan
                             slaves[i] = status
                             slavesChan <- slaves
@@ -253,7 +251,7 @@ func MasterLoop(isBackup bool) {
                     for j := 0; j < util.Nslaves; j++ {
                         select {
                         case <-timers[j].C:
-                            fmt.Println("Slave is dead. IP: ", slaveIPs[j])
+                            fmt.Println("Slave is dead. IP: ", util.SlaveIPs[j])
                             slaveAlive = <-slaveAliveChan
                             slaveAlive[j] = false
                             slaveAliveChan <- slaveAlive
@@ -268,7 +266,7 @@ func MasterLoop(isBackup bool) {
                                     go sendOrder(orders[j][i], sendOrdersChannel)
                                     orders[j][i].Completed = false
 
-                                    DistributeIncompleteOrder(orders[j][i], sendOrdersChannel, orderChan, slaveAliveChan, slavesChan)
+                                    distributeOrder(orders[j][i], sendOrdersChannel, orderChan, slaveAliveChan, slavesChan)
 
                                 }
                             }
