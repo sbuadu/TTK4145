@@ -266,20 +266,19 @@ func SlaveLoop(isBackup bool) {
 					if driver.GetCurrentFloor() == 3 && thisElevator.ElevDirection == 0 || driver.GetCurrentFloor() == 0 && thisElevator.ElevDirection == 1 {
 						driver.SteerElevator(2)
 					}
+					time.Sleep(100 * time.Millisecond)
 				}
 			}()
 
 			//listening for updates on the slaves orderslice
 			go func() {
 				for isBackup {
-					if len(orderChanBackup) == cap(orderChanBackup) {
-						tmpOrderSlice := <-orderChanBackup
-						if len(tmpOrderSlice) != 0 {
-							if tmpOrderSlice[0].ThisElevator.IP == thisElevator.IP {
-								orderSlice = tmpOrderSlice
-							} else {
-								otherOrders = tmpOrderSlice
-							}
+					tmpOrderSlice := <-orderChanBackup
+					if len(tmpOrderSlice) != 0 {
+						if tmpOrderSlice[0].ThisElevator.IP == thisElevator.IP {
+							orderSlice = tmpOrderSlice
+						} else {
+							otherOrders = tmpOrderSlice
 						}
 					}
 				}

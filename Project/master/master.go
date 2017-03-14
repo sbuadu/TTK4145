@@ -269,7 +269,9 @@ func MasterLoop(isBackup bool) {
 							}
 						default:
 						}
+
 					}
+					time.Sleep(5 * time.Second)
 				}
 			}()
 

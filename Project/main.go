@@ -22,15 +22,15 @@ const (
 )
 
 func main() {
-/*
-	fmt.Println("Testing the order prioritizing")
-	go slave.Test()
-	for{
-		
-	}
+	/*
+		fmt.Println("Testing the order prioritizing")
+		go slave.Test()
+		for{
+
+		}
 
 
-*/
+	*/
 
 	startMaster := flag.Bool("startMaster", false, "a bool")
 	startMasterBackup := flag.Bool("startMasterBackup", false, "a bool")
@@ -59,9 +59,7 @@ func main() {
 		fmt.Println("Starting slavebackup")
 		go slave.SlaveLoop(true)
 	}
-	for {
-
-	}
+	select {}
 	//testing that we are able to steer the elevator and return current floor
 	/*
 	   	driver.SteerElevator(driver.Direction(0))
