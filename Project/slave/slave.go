@@ -279,6 +279,11 @@ func SlaveLoop(isBackup bool) {
 			for i := 0; i < len(orderSlice); i++ {
 				driver.SetButtonLamp(orderSlice[i].FromButton.Floor, orderSlice[i].FromButton.TypeOfButton, 1)
 			}
+            otherOrders =<-otherOrderChan
+			for i := 0; i < len(otherOrders); i++ {
+				driver.SetButtonLamp(otherOrders[i].FromButton.Floor, otherOrders[i].FromButton.TypeOfButton, 1)
+			}
+            otherOrderChan <- otherOrders
 
 			fmt.Println("I'm a slave now")
 
