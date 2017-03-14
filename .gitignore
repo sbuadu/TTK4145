@@ -2,6 +2,7 @@ thread
 elev.o
 elevator
 *.swp
+*.o
 Exercise6/backup
 Exercise6/master
 Project/driver/io.o
