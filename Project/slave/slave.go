@@ -53,7 +53,7 @@ func ListenRemoteOrders(listenForOrders chan util.Order, orderChan, otherOrderCh
 		if order.ThisElevator.IP == thisElevator.IP { //the elevator should complete the order itself
 
 			if !order.Completed {
-
+				fmt.Println("doing order:", order.FromButton.Floor)
 				success := orderManagement.AddOrder(orderChan, otherOrderChan, order.FromButton.Floor, order.FromButton.TypeOfButton, order.ThisElevator, order.AtTime)
 				if success == 1 {
 
@@ -66,6 +66,7 @@ func ListenRemoteOrders(listenForOrders chan util.Order, orderChan, otherOrderCh
 				otherOrders := <-otherOrderChan
 
 				if !order.Completed {
+					fmt.Println("Other elevator doing order: ", order.FromButton.Floor)
 					otherOrders = append(otherOrders, order)
 					driver.SetButtonLamp(order.FromButton.Floor, order.FromButton.TypeOfButton, 1)
 
