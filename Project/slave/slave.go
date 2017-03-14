@@ -56,7 +56,7 @@ func sendOrder(order util.Order, sendOrders chan util.Order, orderChan, otherOrd
 func listenRemoteOrders(listenForOrders chan util.Order, orderChan, otherOrderChan chan []util.Order) {
 
 	for {
-		fmt.Println("waiting for remote order")
+		//fmt.Println("waiting for remote order")
 		select {
 
 		case order := <-listenForOrders:
@@ -220,7 +220,7 @@ func SlaveLoop(isBackup bool) {
 
 	orderChan <- orderSlice
 	otherOrderChan <- otherOrders
-
+	listenForOrders <- util.Order{}
 	firstTry := true
 
 	for {
