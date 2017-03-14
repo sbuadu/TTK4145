@@ -364,13 +364,18 @@ func SlaveLoop(isBackup bool) {
 									otherOrders[i].ThisElevator = thisElevator
 									otherOrders = orderManagement.RemoveOrder(otherOrders[i], otherOrders)
 									otherOrderChan <- otherOrders
+									fmt.Println("returned other orderSlice2")
 									orderManagement.AddOrder(orderChan, otherOrderChan, otherOrders[i].FromButton.Floor, otherOrders[i].FromButton.TypeOfButton, otherOrders[i].ThisElevator, otherOrders[i].AtTime)
 									i -= 1
+								} else {
+									otherOrderChan <- otherOrders
+									fmt.Println("returned other orderSlice2")
 								}
 							}
 
 						} else {
 							otherOrderChan <- otherOrders
+							fmt.Println("returned other orderSlice2")
 						}
 
 					default:
