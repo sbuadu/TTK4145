@@ -74,10 +74,11 @@ func listenRemoteOrders(listenForOrders chan util.Order, orderChan, otherOrderCh
 				}
 
 			} else { // another elevator will complete the order
-
+				fmt.Println("FROM OTHER ELEVATOR")
 				if order.FromButton.TypeOfButton != 2 {
-					otherOrders := <-otherOrderChan
 
+					otherOrders := <-otherOrderChan
+					fmt.Println("getting other orders slice")
 					if !order.Completed {
 						//fmt.Println("reveived an order for another elevator")
 						fmt.Println("Other elevator doing order: ", order.FromButton.Floor)
@@ -92,7 +93,7 @@ func listenRemoteOrders(listenForOrders chan util.Order, orderChan, otherOrderCh
 
 					}
 					otherOrderChan <- otherOrders
-					fmt.Println("Done with other order")
+
 				}
 
 			}
