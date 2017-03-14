@@ -76,9 +76,9 @@ func listenRemoteOrders(listenForOrders chan util.Order, orderChan, otherOrderCh
 			} else { // another elevator will complete the order
 				fmt.Println("FROM OTHER ELEVATOR")
 				if order.FromButton.TypeOfButton != 2 {
-
-					otherOrders := <-otherOrderChan
 					fmt.Println("getting other orders slice")
+					otherOrders := <-otherOrderChan
+					fmt.Println("got other orders slice")
 					if !order.Completed {
 						//fmt.Println("reveived an order for another elevator")
 						fmt.Println("Other elevator doing order: ", order.FromButton.Floor)
@@ -358,7 +358,7 @@ func SlaveLoop(isBackup bool) {
 					if len(otherOrders) > 0 {
 
 						for i := 0; i < len(otherOrders); i++ {
-							if time.Since(otherOrders[i].AtTime) > time.Second*60 {
+							if time.Since(otherOrders[i].AtTime) > time.Second*20 {
 								otherOrders[i].ThisElevator = thisElevator
 								otherOrders = orderManagement.RemoveOrder(otherOrders[i], otherOrders)
 								otherOrderChan <- otherOrders
@@ -371,7 +371,7 @@ func SlaveLoop(isBackup bool) {
 						otherOrderChan <- otherOrders
 					}
 
-					time.Sleep(40 * time.Second)
+					time.Sleep(10 * time.Second)
 				}
 			}()
 
