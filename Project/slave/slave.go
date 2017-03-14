@@ -254,6 +254,14 @@ func SlaveLoop(isBackup bool) {
 						thisElevator = <-stateChanBackup
 						//fmt.Println("Elevator at floor", thisElevator.LastFloor)
 						tmr.Reset(3 * time.Second)
+						tmpOrderSlice := <-orderChanBackup
+						if len(tmpOrderSlice) != 0 {
+							if tmpOrderSlice[0].ThisElevator.IP == thisElevator.IP {
+								orderSlice = tmpOrderSlice
+							} else {
+								otherOrders = tmpOrderSlice
+							}
+						}
 					} else {
 						return
 					}
@@ -261,28 +269,18 @@ func SlaveLoop(isBackup bool) {
 			}()
 
 			//do we actually use these ??
-			go func() {
-				for {
-					if driver.GetCurrentFloor() == 3 && thisElevator.ElevDirection == 0 || driver.GetCurrentFloor() == 0 && thisElevator.ElevDirection == 1 {
-						driver.SteerElevator(2)
+			/*
+				go func() {
+					for {
+						if driver.GetCurrentFloor() == 3 && thisElevator.ElevDirection == 0 || driver.GetCurrentFloor() == 0 && thisElevator.ElevDirection == 1 {
+							driver.SteerElevator(2)
+						}
+						time.Sleep(100 * time.Millisecond)
 					}
-					time.Sleep(100 * time.Millisecond)
-				}
-			}()
+				}()
+			*/
 
 			//listening for updates on the slaves orderslice
-			go func() {
-				for isBackup {
-					tmpOrderSlice := <-orderChanBackup
-					if len(tmpOrderSlice) != 0 {
-						if tmpOrderSlice[0].ThisElevator.IP == thisElevator.IP {
-							orderSlice = tmpOrderSlice
-						} else {
-							otherOrders = tmpOrderSlice
-						}
-					}
-				}
-			}()
 
 		}
 
