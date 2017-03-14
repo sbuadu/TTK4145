@@ -354,30 +354,30 @@ func SlaveLoop(isBackup bool) {
 			go func() {
 				for {
 
-					select{
+					select {
 					case otherOrders = <-otherOrderChan:
-											fmt.Println("got other orders slice 2")
-					if len(otherOrders) > 0 {
+						fmt.Println("got other orders slice 2")
+						if len(otherOrders) > 0 {
 
-						for i := 0; i < len(otherOrders); i++ {
-							if time.Since(otherOrders[i].AtTime) > time.Second*20 {
-								otherOrders[i].ThisElevator = thisElevator
-								otherOrders = orderManagement.RemoveOrder(otherOrders[i], otherOrders)
-								otherOrderChan <- otherOrders
-								orderManagement.AddOrder(orderChan, otherOrderChan, otherOrders[i].FromButton.Floor, otherOrders[i].FromButton.TypeOfButton, otherOrders[i].ThisElevator, otherOrders[i].AtTime)
-								i -= 1
+							for i := 0; i < len(otherOrders); i++ {
+								if time.Since(otherOrders[i].AtTime) > time.Second*20 {
+									otherOrders[i].ThisElevator = thisElevator
+									otherOrders = orderManagement.RemoveOrder(otherOrders[i], otherOrders)
+									otherOrderChan <- otherOrders
+									orderManagement.AddOrder(orderChan, otherOrderChan, otherOrders[i].FromButton.Floor, otherOrders[i].FromButton.TypeOfButton, otherOrders[i].ThisElevator, otherOrders[i].AtTime)
+									i -= 1
+								}
 							}
+
+						} else {
+							otherOrderChan <- otherOrders
 						}
 
-					} else {
-						otherOrderChan <- otherOrders
+					default:
 					}
 
-				}
-			default:
-			}
-
 					time.Sleep(10 * time.Second)
+				}
 			}()
 
 			spawnBackup := exec.Command("gnome-terminal", "-x", "sh", "-c", "go run /home/student/Documents/Group55/TTK4145/Project/main.go -startSlaveBackup")
