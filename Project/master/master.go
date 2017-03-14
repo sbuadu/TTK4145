@@ -233,7 +233,7 @@ func MasterLoop(isBackup bool) {
 							slaves = <-slavesChan
 							slaves[i] = status
 							slavesChan <- slaves
-							fmt.Println(status.IP, " Present")
+							//fmt.Println(status.IP, " Present")
 							timers[i].Reset(5 * time.Second)
 						}
 					}

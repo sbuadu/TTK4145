@@ -47,12 +47,12 @@ func main() {
 	go peers.Receiver(15647, peerUpdateCh)
 
 	// We make channels for sending and receiving our custom data types
-	helloTx := make(chan HelloMsg, 1)
+	helloTx1 := make(chan HelloMsg, 1)
 	helloRx := make(chan HelloMsg, 1)
 	// ... and start the transmitter/receiver pair on some port
 	// These functions can take any number of channels! It is also possible to
 	//  start multiple transmitters/receivers on the same port.
-	go bcast.Transmitter(16569, helloTx)
+	go bcast.Transmitter(16569, helloTx1)
 	go bcast.Receiver(16569, helloRx)
 
 	// The example message. We just send one of these every second.
@@ -60,22 +60,20 @@ func main() {
 		helloMsg := HelloMsg{"Hello from " + id, 0}
 		for {
 			helloMsg.Iter++
-			helloTx <- helloMsg
+			helloTx1 <- helloMsg
 			time.Sleep(1 * time.Second)
 		}
 	}()
 
 	fmt.Println("Started")
 	for {
-		select {
-		case p := <-peerUpdateCh:
+		/*
 			fmt.Printf("Peer update:\n")
 			fmt.Printf("  Peers:    %q\n", p.Peers)
 			fmt.Printf("  New:      %q\n", p.New)
 			fmt.Printf("  Lost:     %q\n", p.Lost)
-
-		case a := <-helloRx:
-			fmt.Printf("Received: %#v\n", a)
-		}
+		*/
+		a := <-helloRx
+		fmt.Printf("Received: %#v\n", a)
 	}
 }
