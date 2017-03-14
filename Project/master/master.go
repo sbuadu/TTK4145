@@ -22,7 +22,7 @@ It is also resposible for assigning orders to individual elevators
 func sendOrder(order util.Order, sendOrdersChannel chan util.Order) {
 	for i := 0; i < 3; i++ {
 		sendOrdersChannel <- order
-		time.Sleep(1 * time.Second)
+		time.Sleep(100 * time.Millisecond)
 	}
 }
 
@@ -259,6 +259,7 @@ func MasterLoop(isBackup bool) {
 
 								if !(orders[j][i].FromButton.TypeOfButton == 2) {
 									orders[j][i].Completed = true
+									fmt.Println("Sending complete dead order")
 									go sendOrder(orders[j][i], sendOrdersChannel)
 									orders[j][i].Completed = false
 

@@ -30,7 +30,7 @@ func Transmitter(otherIP string, port int, chans ...interface{}) {
 	}
 
 	conn := conn.DialBroadcastUDP(port)
-	addr, _ := net.ResolveUDPAddr("udp4", fmt.Sprintf("%s:%d",otherIP, port))
+	addr, _ := net.ResolveUDPAddr("udp4", fmt.Sprintf("%s:%d", otherIP, port))
 	for {
 		chosen, value, _ := reflect.Select(selectCases)
 		buf, _ := json.Marshal(value.Interface())
