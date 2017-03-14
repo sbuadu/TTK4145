@@ -9,7 +9,7 @@ const Nfloors = 4
 const DoorOpenTime = 1000 * time.Millisecond
 const Nbuttons = 3
 
-var SlaveIPs = [Nslaves]string{"129.241.187.156", "129.241.187.158"}
+var SlaveIPs = [Nslaves]string{"129.241.187.156", "129.241.187.161"}
 
 type Direction int
 
