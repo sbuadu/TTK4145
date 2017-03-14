@@ -11,7 +11,11 @@ import (
 	"time"
 )
 
-/*SLAVE MODULE
+/*
+Module: slave
+
+date: 14.03.17
+
 
 This module handles the operation of the individual elevator.
 
