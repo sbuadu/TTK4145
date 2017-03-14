@@ -33,10 +33,12 @@ func sendOrder(order util.Order, sendOrders chan util.Order, orderChan, otherOrd
 				return
 			}
 		default:
+
 		}
 	}
-	fmt.Println("callback received: ", sendSuccess)
+
 	if !sendSuccess && !order.Completed {
+		fmt.Println("trying to add order")
 		success := orderManagement.AddOrder(orderChan, otherOrderChan, order.FromButton.Floor, order.FromButton.TypeOfButton, order.ThisElevator, order.AtTime)
 		if success == 1 {
 			driver.SetButtonLamp(order.FromButton.Floor, order.FromButton.TypeOfButton, 1)
@@ -58,7 +60,7 @@ func listenRemoteOrders(listenForOrders chan util.Order, orderChan, otherOrderCh
 				fmt.Println("doing order:", order.FromButton.Floor)
 				success := orderManagement.AddOrder(orderChan, otherOrderChan, order.FromButton.Floor, order.FromButton.TypeOfButton, order.ThisElevator, order.AtTime)
 				if success == 1 {
-
+					fmt.Println("Trying to turn on light on floor", order.FromButton.Floor)
 					driver.SetButtonLamp(order.FromButton.Floor, order.FromButton.TypeOfButton, 1)
 				}
 			}
@@ -70,6 +72,7 @@ func listenRemoteOrders(listenForOrders chan util.Order, orderChan, otherOrderCh
 				if !order.Completed {
 					fmt.Println("Other elevator doing order: ", order.FromButton.Floor)
 					otherOrders = append(otherOrders, order)
+					fmt.Println("Trying to turn on light on floor", order.FromButton.Floor)
 					driver.SetButtonLamp(order.FromButton.Floor, order.FromButton.TypeOfButton, 1)
 
 				} else {
