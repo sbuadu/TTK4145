@@ -221,9 +221,11 @@ func SlaveLoop(isBackup bool) {
 				firstTry = true
 				select {
 				case <-orderChan:
+                case <-otherOrderChan:
 				default:
 				}
 				orderChan <- orderSlice
+                otherOrderChan <- otherOrders
 				fmt.Println("Taking over as slave")
 			}()
 
@@ -254,7 +256,14 @@ func SlaveLoop(isBackup bool) {
 			go func() {
 				for isBackup {
 					if len(orderChanBackup) == cap(orderChanBackup) {
-						orderSlice = <-orderChanBackup
+                        tmpOrderSlice := <-orderChanBackup
+                        if len(tmpOrderSlice) !=0{
+                            if tmpOrderSlice[0].ThisElevator.IP == thisElevator.IP {
+                                orderSlice = tmpOrderSlice
+                            } else {
+                                otherOrders = tmpOrderSlice
+                            }
+                        }
 					}
 				}
 			}()
