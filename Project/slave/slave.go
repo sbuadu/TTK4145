@@ -20,6 +20,7 @@ This module handles the operation of the individual elevator.
 */
 
 func sendOrder(order util.Order, sendOrders chan util.Order, orderChan, otherOrderChan chan []util.Order, callback chan time.Time) {
+	fmt.Println("trying to send order...")
 	sendOrders <- order
 	fmt.Println("Sent order")
 	sendSuccess := false
@@ -44,6 +45,8 @@ func sendOrder(order util.Order, sendOrders chan util.Order, orderChan, otherOrd
 			driver.SetButtonLamp(order.FromButton.Floor, order.FromButton.TypeOfButton, 1)
 			fmt.Println("doing the order myself")
 
+		} else {
+			fmt.Println("couldnt add order")
 		}
 	}
 }
@@ -52,7 +55,7 @@ func sendOrder(order util.Order, sendOrders chan util.Order, orderChan, otherOrd
 func listenRemoteOrders(listenForOrders chan util.Order, orderChan, otherOrderChan chan []util.Order) {
 
 	for {
-
+		fmt.Println("listening for remote orders...")
 		order := <-listenForOrders
 		if order.ThisElevator.IP == thisElevator.IP { //the elevator should complete the order itself
 
@@ -60,7 +63,7 @@ func listenRemoteOrders(listenForOrders chan util.Order, orderChan, otherOrderCh
 				fmt.Println("doing order:", order.FromButton.Floor)
 				success := orderManagement.AddOrder(orderChan, otherOrderChan, order.FromButton.Floor, order.FromButton.TypeOfButton, order.ThisElevator, order.AtTime)
 				if success == 1 {
-					fmt.Println("Trying to turn on light on floor", order.FromButton.Floor)
+					//fmt.Println("Trying to turn on light on floor", order.FromButton.Floor)
 					driver.SetButtonLamp(order.FromButton.Floor, order.FromButton.TypeOfButton, 1)
 				}
 			}
@@ -72,7 +75,7 @@ func listenRemoteOrders(listenForOrders chan util.Order, orderChan, otherOrderCh
 				if !order.Completed {
 					fmt.Println("Other elevator doing order: ", order.FromButton.Floor)
 					otherOrders = append(otherOrders, order)
-					fmt.Println("Trying to turn on light on floor", order.FromButton.Floor)
+					fmt.Println("turn on light for other order", order.FromButton.Floor)
 					driver.SetButtonLamp(order.FromButton.Floor, order.FromButton.TypeOfButton, 1)
 
 				} else {

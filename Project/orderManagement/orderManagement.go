@@ -19,11 +19,12 @@ It is a module supporting both the master and slave module.
 func AddOrder(orderChan, otherOrderChan chan []util.Order, floor, button int, elevator util.Elevator, atTime time.Time) int {
 
 	order := util.Order{elevator, util.Button{floor, button}, atTime, false}
-	fmt.Println("OM Adding order", order.FromButton.Floor)
+	//fmt.Println("OM Adding order", order.FromButton.Floor)
 	orderSlice := <-orderChan
 	otherOrders := <-otherOrderChan
 
 	if duplicateOrder(order, orderSlice) || duplicateOrder(order, otherOrders) {
+		fmt.Println("Received duplicate order")
 		orderChan <- orderSlice
 		otherOrderChan <- otherOrders
 		return 0
