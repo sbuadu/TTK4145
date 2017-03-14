@@ -58,7 +58,6 @@ func listenRemoteOrders(listenForOrders chan util.Order, orderChan, otherOrderCh
 	for {
 
 		order := <-listenForOrders
-
 		if order.ThisElevator.IP == thisElevator.IP { //the elevator should complete the order itself
 
 			if !order.Completed {
@@ -84,14 +83,13 @@ func listenRemoteOrders(listenForOrders chan util.Order, orderChan, otherOrderCh
 					fmt.Println("turned on light for other order", order.FromButton.Floor)
 
 				} else {
-
+					fmt.Println("Other elevator finished order", order.FromButton.Floor)
 					otherOrders = orderManagement.RemoveOrder(order, otherOrders)
 					driver.SetButtonLamp(order.FromButton.Floor, order.FromButton.TypeOfButton, 0)
 
 				}
-
 				otherOrderChan <- otherOrders
-
+				fmt.Println("Done with other order")
 			}
 
 		}
