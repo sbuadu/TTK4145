@@ -138,7 +138,6 @@ func MasterLoop(isBackup bool) {
 			//Receiving status update from Master
 			go func() {
 				for {
-					//fmt.Println("receiving update from Master")
 					orders = <-ordersFromMaster
 					slaves = <-statusFromMaster
 					tmr.Reset(5 * time.Second)
@@ -157,7 +156,7 @@ func MasterLoop(isBackup bool) {
 				<-tmr.C
 				isBackup = false
 				firstTry = true
-				fmt.Println("Master is dead, dobby is a free elf!")
+				fmt.Println("Master is dead")
 				select {
 				case <-slavesChan:
 				default:
@@ -224,7 +223,6 @@ func MasterLoop(isBackup bool) {
 					}
 					orderBackupChan <- orders
 					slavesBackupChan <- slaves
-					//fmt.Println("Sent update to backup")
 					time.Sleep(1 * time.Second)
 				}
 			}()
@@ -238,7 +236,6 @@ func MasterLoop(isBackup bool) {
 							slaves = <-slavesChan
 							slaves[i] = status
 							slavesChan <- slaves
-							//fmt.Println(status.IP, " Present")
 							timers[i].Reset(5 * time.Second)
 						}
 					}

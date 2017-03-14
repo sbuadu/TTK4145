@@ -20,9 +20,7 @@ This module handles the operation of the individual elevator.
 */
 
 func sendOrder(order util.Order, sendOrders chan util.Order, orderChan, otherOrderChan chan []util.Order, callback chan time.Time) {
-	//	fmt.Println("trying to send order...")
 	sendOrders <- order
-	//	fmt.Println("Sent order")
 	sendSuccess := false
 
 	for i := 0; i < 3; i++ {
@@ -39,14 +37,11 @@ func sendOrder(order util.Order, sendOrders chan util.Order, orderChan, otherOrd
 	}
 
 	if !sendSuccess && !order.Completed {
-		//	fmt.Println("trying to add order")
 		success := orderManagement.AddOrder(orderChan, otherOrderChan, order.FromButton.Floor, order.FromButton.TypeOfButton, order.ThisElevator, order.AtTime)
 		if success == 1 {
 			driver.SetButtonLamp(order.FromButton.Floor, order.FromButton.TypeOfButton, 1)
-			//	fmt.Println("doing the order myself")
 
 		} else {
-			//fmt.Println("couldnt add order")
 		}
 	}
 }
@@ -56,7 +51,6 @@ func sendOrder(order util.Order, sendOrders chan util.Order, orderChan, otherOrd
 func listenRemoteOrders(listenForOrders chan util.Order, orderChan, otherOrderChan chan []util.Order) {
 
 	for {
-		//fmt.Println("waiting for remote order")
 		select {
 
 		case order := <-listenForOrders:
@@ -64,11 +58,8 @@ func listenRemoteOrders(listenForOrders chan util.Order, orderChan, otherOrderCh
 			if order.ThisElevator.IP == thisElevator.IP { //the elevator should complete the order itself
 
 				if !order.Completed {
-					//fmt.Println("reveived an order for me")
-					//fmt.Println("doing order:", order.FromButton.Floor)
 					success := orderManagement.AddOrder(orderChan, otherOrderChan, order.FromButton.Floor, order.FromButton.TypeOfButton, order.ThisElevator, order.AtTime)
 					if success == 1 {
-						//fmt.Println("Trying to turn on light on floor", order.FromButton.Floor)
 						driver.SetButtonLamp(order.FromButton.Floor, order.FromButton.TypeOfButton, 1)
 					}
 				}
@@ -76,25 +67,21 @@ func listenRemoteOrders(listenForOrders chan util.Order, orderChan, otherOrderCh
 			} else { // another elevator will complete the order
 				fmt.Println("FROM OTHER ELEVATOR")
 				if order.FromButton.TypeOfButton != 2 {
-					fmt.Println("getting other orders slice 1")
 					otherOrders := <-otherOrderChan
 
 					if !order.Completed {
-						//fmt.Println("reveived an order for another elevator")
 						fmt.Println("Other elevator doing order: ", order.FromButton.Floor)
 						otherOrders = append(otherOrders, order)
 						driver.SetButtonLamp(order.FromButton.Floor, order.FromButton.TypeOfButton, 1)
-						fmt.Println("turned on light for other order", order.FromButton.Floor)
 
 					} else {
-						fmt.Println("Other elevator finished order", order.FromButton.Floor)
+						fmt.Println("Other elevator did order: ", order.FromButton.Floor)
 						otherOrders = orderManagement.RemoveOrder(order, otherOrders)
 						driver.SetButtonLamp(order.FromButton.Floor, order.FromButton.TypeOfButton, 0)
 
 					}
-					fmt.Println("trying to return other orderslice 1")
+
 					otherOrderChan <- otherOrders
-					fmt.Println("returning other orders slice 1")
 
 				}
 
@@ -220,7 +207,7 @@ func SlaveLoop(isBackup bool) {
 
 	orderChan <- orderSlice
 	otherOrderChan <- otherOrders
-	listenForOrders <- util.Order{}
+
 	firstTry := true
 
 	for {
@@ -262,7 +249,6 @@ func SlaveLoop(isBackup bool) {
 					if isBackup {
 
 						thisElevator = <-stateChanBackup
-						//fmt.Println("Elevator at floor", thisElevator.LastFloor)
 						tmr.Reset(3 * time.Second)
 						tmpOrderSlice := <-orderChanBackup
 						if len(tmpOrderSlice) != 0 {
@@ -277,21 +263,6 @@ func SlaveLoop(isBackup bool) {
 					}
 				}
 			}()
-
-			//do we actually use these ??
-			/*
-				go func() {
-					for {
-						if driver.GetCurrentFloor() == 3 && thisElevator.ElevDirection == 0 || driver.GetCurrentFloor() == 0 && thisElevator.ElevDirection == 1 {
-							driver.SteerElevator(2)
-						}
-						time.Sleep(100 * time.Millisecond)
-					}
-				}()
-			*/
-
-			//listening for updates on the slaves orderslice
-
 		}
 
 		if !isBackup && firstTry {
@@ -339,13 +310,12 @@ func SlaveLoop(isBackup bool) {
 					case <-stateChanMaster:
 					default:
 					}
-					//fmt.Println("update backup")
+
 					newStateChanBackup <- thisElevator
 					newOrderChanBackup <- orderSlice
 					stateChanMaster <- thisElevator
 					orderSlice = <-orderChan
 					orderChan <- orderSlice
-					//	fmt.Println(orderSlice)
 
 					time.Sleep(1000 * time.Millisecond)
 
