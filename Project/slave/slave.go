@@ -14,11 +14,10 @@ import (
 
 /*SLAVE MODULE
 
-This module handles the individual elevator.
+This module handles the operation of the individual elevator.
 
 */
 
-//Tested: works
 func SendOrder(order util.Order, sendOrders chan util.Order, orderChan, otherOrderChan chan []util.Order, callback chan time.Time) {
 	sendOrders <- order
 	fmt.Println("Sent order")
@@ -64,7 +63,6 @@ func ListenRemoteOrders(listenForOrders chan util.Order, orderChan, otherOrderCh
 
 		} else { // another elevator will complete the order
 			if order.FromButton.TypeOfButton != 2 {
-
 				otherOrders := <-otherOrderChan
 
 				if !order.Completed {
@@ -97,16 +95,15 @@ func ListenLocalOrders(sendOrders chan util.Order, orderChan, otherOrderChan cha
 
 		if changed {
 			order := util.Order{thisElevator, util.Button{floor, button}, time.Now(), false}
-			fmt.Println("sending order")
+			//fmt.Println("sending order")
 			go SendOrder(order, sendOrders, orderChan, otherOrderChan, callback)
 			time.Sleep(700 * time.Millisecond)
 		}
 		changed = false
 	}
-	time.Sleep(100 * time.Millisecond)
+
 }
 
-//tested: works
 func goToFloor(order util.Order, currentFloor int) {
 	orderFloor := order.FromButton.Floor
 	higher := currentFloor < orderFloor
@@ -133,7 +130,6 @@ func goToFloor(order util.Order, currentFloor int) {
 	driver.SetDoorLamp(1)
 }
 
-//tested: works
 func ExecuteOrder(sendOrders chan util.Order, orderChan, otherOrderChan chan []util.Order, callback chan time.Time) {
 
 	currentFloor := driver.GetCurrentFloor()
@@ -208,15 +204,21 @@ func SlaveLoop(isBackup bool) {
 	for {
 		if isBackup && firstTry {
 			firstTry = false
+
+			//channels for communicating with slave master
 			orderChanBackup := make(chan []util.Order, 1)
 			stateChanBackup := make(chan util.Elevator, 1)
 
 			go bcast.Receiver(20010, orderChanBackup, stateChanBackup)
+
+			fmt.Println("started timer")
 			tmr := time.NewTimer(5 * time.Second)
 
 			//listening for timer laps and taking over operation
 			go func() {
+
 				<-tmr.C
+				fmt.Println("timer lapsed")
 				isBackup = false
 				firstTry = true
 				select {
@@ -273,6 +275,7 @@ func SlaveLoop(isBackup bool) {
 
 			fmt.Println("I'm a slave now")
 
+			//channels for communicating with slave backup
 			newStateChanBackup := make(chan util.Elevator, 1)
 			newOrderChanBackup := make(chan []util.Order, 1)
 			stateChanMaster := make(chan util.Elevator, 1)
@@ -294,7 +297,7 @@ func SlaveLoop(isBackup bool) {
 					case <-stateChanMaster:
 					default:
 					}
-
+					fmt.Println("update backup")
 					newStateChanBackup <- thisElevator
 					newOrderChanBackup <- orderSlice
 					stateChanMaster <- thisElevator
@@ -306,6 +309,32 @@ func SlaveLoop(isBackup bool) {
 
 				}
 			}()
+
+			//Checking for old remote orders are run out
+			go func() {
+				for {
+
+					otherOrders = <-otherOrderChan
+					if len(otherOrders) > 0 {
+
+						for i := 0; i < len(otherOrders); i++ {
+							if time.Since(otherOrders[i].AtTime) > time.Second*60 {
+								otherOrders[i].ThisElevator = thisElevator
+								otherOrders = orderManagement.RemoveOrder(otherOrders[i], otherOrders)
+								otherOrderChan <- otherOrders
+								orderManagement.AddOrder(orderChan, otherOrderChan, otherOrders[i].FromButton.Floor, otherOrders[i].FromButton.TypeOfButton, otherOrders[i].ThisElevator, otherOrders[i].AtTime)
+								i -= 1
+							}
+						}
+
+					} else {
+						otherOrderChan <- otherOrders
+					}
+
+					time.Sleep(40 * time.Second)
+				}
+			}()
+
 			spawnBackup := exec.Command("gnome-terminal", "-x", "sh", "-c", "go run /home/student/Documents/Group55/TTK4145/Project/main.go -startSlaveBackup")
 			spawnBackup.Start()
 

@@ -38,10 +38,11 @@ func RemoveOrder(order util.Order, orderSlice []util.Order) []util.Order {
 	for i := 0; i < len(orderSlice); i++ {
 		if orderSlice[i].FromButton.Floor == order.FromButton.Floor && orderSlice[i].FromButton.TypeOfButton == order.FromButton.TypeOfButton {
 			orderSlice = append(orderSlice[:i], orderSlice[i+1:]...)
+			i -= 1
 			if len(orderSlice) == 0 {
 				return []util.Order{}
 			}
-			return orderSlice
+
 		}
 	}
 	return orderSlice

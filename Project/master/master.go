@@ -5,21 +5,25 @@ import (
 	//"../network/localip"
 	"../orderManagement"
 	"../util"
-	"bytes"
+	//"bytes"
 	"fmt"
-	"os/exec"
+	//"os/exec"
 	"time"
 )
 
 /* MASTER MODULE
-The master module works a
+The master module works as a supervisor of the elevators operations
+and is resposible for assigning orders to individual elevators
+
 */
 
 //var slaveIPs = [util.Nslaves]string{"129.241.187.157","129.241.187.153"}
 //var slaveIPs = [util.Nslaves]string{"129.241.187.153"}
+var slaveIPs = [util.Nslaves]string{"129.241.187.148", "129.241.187.144"}
 
-var slaveIPs = [util.Nslaves]string{"129.241.187.158", "129.241.187.156"}
+//var slaveIPs = [util.Nslaves]string{"129.241.187.158", "129.241.187.156"}
 
+/*
 //tested: works
 func InitSlave(IP string) {
 	spawnSlave := exec.Command("bash", "./startSlave.sh", IP, "-startSlave")
@@ -32,8 +36,8 @@ func InitSlave(IP string) {
 		fmt.Println(err)
 	}
 }
+*/
 
-//tested: works
 func sendOrder(order util.Order, sendOrdersChannel chan util.Order) {
 	for i := 0; i < 3; i++ {
 		sendOrdersChannel <- order
@@ -41,9 +45,9 @@ func sendOrder(order util.Order, sendOrdersChannel chan util.Order) {
 	}
 }
 
-//tested: works
 func DistributeIncompleteOrder(order util.Order, sendOrdersChannel chan util.Order, orderChan chan [util.Nslaves][]util.Order, slaveAliveChan chan [util.Nslaves]bool, slavesChan chan [util.Nslaves]util.Elevator) {
 	var workingSlaves = make([]util.Elevator, 0)
+
 	for i := 0; i < util.Nslaves; i++ {
 		slaveAlive := <-slaveAliveChan
 		slaves := <-slavesChan
@@ -59,7 +63,8 @@ func DistributeIncompleteOrder(order util.Order, sendOrdersChannel chan util.Ord
 	fmt.Println("  should go to floor:", order.FromButton.Floor)
 	go sendOrder(order, sendOrdersChannel)
 
-	for i := 0; i < util.Nslaves; i++ { //adding the order to the right backup slice
+	//adding the order to the right backup slice
+	for i := 0; i < util.Nslaves; i++ {
 		if order.ThisElevator.IP == slaveIPs[i] {
 			orders := <-orderChan
 			tempChan := make(chan []util.Order, 1)
@@ -77,14 +82,13 @@ func DistributeIncompleteOrder(order util.Order, sendOrdersChannel chan util.Ord
 	}
 }
 
-//tested: works
-//tested: works
 func distributeOrder(orderChannel, sendOrdersChannel chan util.Order, orderChan chan [util.Nslaves][]util.Order, slaveAliveChan chan [util.Nslaves]bool, slavesChan chan [util.Nslaves]util.Elevator, callbackChannel chan time.Time) {
 	for {
 		order := <-orderChannel
 		callbackChannel <- order.AtTime
 
-		if order.Completed { //removing the completed order from the backup slice
+		//removing the completed order from the backup slice
+		if order.Completed {
 			go sendOrder(order, sendOrdersChannel)
 			for i := 0; i < util.Nslaves; i++ {
 				if order.ThisElevator.IP == slaveIPs[i] {
@@ -93,8 +97,10 @@ func distributeOrder(orderChannel, sendOrdersChannel chan util.Order, orderChan 
 					orderChan <- orders
 				}
 			}
-		} else if order.FromButton.TypeOfButton == 2 {
+
+		} else if order.FromButton.TypeOfButton == 2 { //sending back order if it is an internal order
 			go sendOrder(order, sendOrdersChannel)
+
 		} else {
 
 			DistributeIncompleteOrder(order, sendOrdersChannel, orderChan, slaveAliveChan, slavesChan)
@@ -106,7 +112,7 @@ func distributeOrder(orderChannel, sendOrdersChannel chan util.Order, orderChan 
 func MasterLoop(isBackup bool) {
 	var slaves [util.Nslaves]util.Elevator
 	var slaveAlive [util.Nslaves]bool
-	var orders [util.Nslaves][]util.Order //A backup of all orders the slaves are to complete
+	var orders [util.Nslaves][]util.Order
 
 	//channels for communication with slaves
 	orderChannel := make(chan util.Order, 1)
@@ -119,7 +125,7 @@ func MasterLoop(isBackup bool) {
 	orderChan := make(chan [util.Nslaves][]util.Order, 1)
 	slaveAliveChan := make(chan [util.Nslaves]bool, 1)
 
-	//channels for communication with backup
+	//channels for communication with master backup
 	orderBackupChan := make(chan [util.Nslaves][]util.Order, 1)
 	slavesBackupChan := make(chan [util.Nslaves]util.Elevator, 1)
 	slaveAliveBackupChan := make(chan [util.Nslaves]bool, 1)
@@ -133,31 +139,37 @@ func MasterLoop(isBackup bool) {
 	}
 	firstTry := true
 
+	//starting the Master loop
 	for {
-		//tested:
+
 		if isBackup && firstTry {
 			fmt.Println("I am a master backup")
 			firstTry = false
 			tmr := time.NewTimer(5 * time.Second)
-			//listening to master
+
+			//channels for communication with master master
 			ordersFromMaster := make(chan [util.Nslaves][]util.Order, 1)
 			statusFromMaster := make(chan [util.Nslaves]util.Elevator, 1)
 			slaveAliveFromMaster := make(chan [util.Nslaves]bool, 1)
+
 			go bcast.Receiver(20011, ordersFromMaster, statusFromMaster, slaveAliveFromMaster)
+
+			//Receiving status update from Master
 			go func() {
 				for {
-					fmt.Println("receiving update from Master")
+					//fmt.Println("receiving update from Master")
 					orders = <-ordersFromMaster
 					slaves = <-statusFromMaster
-					//slaveAlive =<-slaveAliveFromMaster //this is not done as often as the two others, should be moved..
 					tmr.Reset(5 * time.Second)
 				}
 			}()
 
+			//Receiving changes in elevator status (dead or alive)
 			go func() {
 				slaveAlive = <-slaveAliveFromMaster
 			}()
 
+			//listening for timer laps and taking over operation
 			go func() {
 				<-tmr.C
 				isBackup = false
@@ -181,7 +193,7 @@ func MasterLoop(isBackup bool) {
 
 			}()
 		}
-		//tested:
+
 		if !isBackup && firstTry {
 			fmt.Println("I am the master")
 			firstTry = false
@@ -229,7 +241,6 @@ func MasterLoop(isBackup bool) {
 
 			go distributeOrder(orderChannel, sendOrdersChannel, orderChan, slaveAliveChan, slavesChan, callbackChannel)
 
-			//tested:
 			//sending updates to backup
 			go func() {
 				for {
@@ -244,13 +255,12 @@ func MasterLoop(isBackup bool) {
 					}
 					orderBackupChan <- orders
 					slavesBackupChan <- slaves
-					fmt.Println("Sent update to master")
+					fmt.Println("Sent update to backup")
 					time.Sleep(1 * time.Second)
 				}
 			}()
 
-			//tested: works
-			//updating info from slave
+			//Receiving status update from slave
 			go func() {
 				for {
 					status := <-statusChannel
