@@ -20,8 +20,11 @@ func AddOrder(orderChan, otherOrderChan chan []util.Order, floor, button int, el
 
 	order := util.Order{elevator, util.Button{floor, button}, atTime, false}
 	//fmt.Println("OM Adding order", order.FromButton.Floor)
+
 	orderSlice := <-orderChan
+	fmt.Println("Getting otherOrderSlice")
 	otherOrders := <-otherOrderChan
+	fmt.Println("Got otherOrderSlice")
 
 	if duplicateOrder(order, orderSlice) || duplicateOrder(order, otherOrders) {
 
@@ -32,7 +35,9 @@ func AddOrder(orderChan, otherOrderChan chan []util.Order, floor, button int, el
 	} else {
 		orderSlice = prioritizeOrder(order, orderSlice, elevator)
 		orderChan <- orderSlice
+
 		otherOrderChan <- otherOrders
+
 		fmt.Println("Ready to execute order: ", order.FromButton.Floor)
 		return 1
 	}
