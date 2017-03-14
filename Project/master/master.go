@@ -262,7 +262,7 @@ func MasterLoop(isBackup bool) {
 									fmt.Println("Sending complete dead order")
 									go sendOrder(orders[j][i], sendOrdersChannel)
 									orders[j][i].Completed = false
-
+									time.Sleep(5 * time.Second)
 									distributeOrder(orders[j][i], sendOrdersChannel, orderChan, slaveAliveChan, slavesChan)
 
 								}
