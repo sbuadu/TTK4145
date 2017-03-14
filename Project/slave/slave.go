@@ -20,9 +20,9 @@ This module handles the operation of the individual elevator.
 */
 
 func sendOrder(order util.Order, sendOrders chan util.Order, orderChan, otherOrderChan chan []util.Order, callback chan time.Time) {
-	fmt.Println("trying to send order...")
+	//	fmt.Println("trying to send order...")
 	sendOrders <- order
-	fmt.Println("Sent order")
+	//	fmt.Println("Sent order")
 	sendSuccess := false
 
 	for i := 0; i < 3; i++ {
@@ -39,14 +39,14 @@ func sendOrder(order util.Order, sendOrders chan util.Order, orderChan, otherOrd
 	}
 
 	if !sendSuccess && !order.Completed {
-		fmt.Println("trying to add order")
+		//	fmt.Println("trying to add order")
 		success := orderManagement.AddOrder(orderChan, otherOrderChan, order.FromButton.Floor, order.FromButton.TypeOfButton, order.ThisElevator, order.AtTime)
 		if success == 1 {
 			driver.SetButtonLamp(order.FromButton.Floor, order.FromButton.TypeOfButton, 1)
-			fmt.Println("doing the order myself")
+			//	fmt.Println("doing the order myself")
 
 		} else {
-			fmt.Println("couldnt add order")
+			//fmt.Println("couldnt add order")
 		}
 	}
 }
@@ -55,11 +55,13 @@ func sendOrder(order util.Order, sendOrders chan util.Order, orderChan, otherOrd
 func listenRemoteOrders(listenForOrders chan util.Order, orderChan, otherOrderChan chan []util.Order) {
 
 	for {
-		fmt.Println("listening for remote orders...")
+
 		order := <-listenForOrders
+
 		if order.ThisElevator.IP == thisElevator.IP { //the elevator should complete the order itself
 
 			if !order.Completed {
+				fmt.Println("reveived an order for me")
 				fmt.Println("doing order:", order.FromButton.Floor)
 				success := orderManagement.AddOrder(orderChan, otherOrderChan, order.FromButton.Floor, order.FromButton.TypeOfButton, order.ThisElevator, order.AtTime)
 				if success == 1 {
@@ -69,14 +71,16 @@ func listenRemoteOrders(listenForOrders chan util.Order, orderChan, otherOrderCh
 			}
 
 		} else { // another elevator will complete the order
+
 			if order.FromButton.TypeOfButton != 2 {
 				otherOrders := <-otherOrderChan
 
 				if !order.Completed {
+					fmt.Println("reveived an order for another elevator")
 					fmt.Println("Other elevator doing order: ", order.FromButton.Floor)
 					otherOrders = append(otherOrders, order)
-					fmt.Println("turn on light for other order", order.FromButton.Floor)
 					driver.SetButtonLamp(order.FromButton.Floor, order.FromButton.TypeOfButton, 1)
+					fmt.Println("turned on light for other order", order.FromButton.Floor)
 
 				} else {
 
