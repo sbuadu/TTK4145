@@ -204,9 +204,9 @@ func SlaveLoop(isBackup bool) {
 	otherOrderChan := make(chan []util.Order, 1)
 
 	//channels for communication with master
-	listenForOrders := make(chan util.Order, 1)
-	sendOrders := make(chan util.Order, 1)
-	callback := make(chan time.Time, 1)
+	listenForOrders := make(chan util.Order)
+	sendOrders := make(chan util.Order)
+	callback := make(chan time.Time)
 
 	orderChan <- orderSlice
 	otherOrderChan <- otherOrders
