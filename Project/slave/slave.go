@@ -58,6 +58,7 @@ func listenRemoteOrders(listenForOrders chan util.Order, orderChan, otherOrderCh
 	for {
 
 		order := <-listenForOrders
+		fmt.Println("Got new order", order.FromButton.Floor)
 		if order.ThisElevator.IP == thisElevator.IP { //the elevator should complete the order itself
 
 			if !order.Completed {
