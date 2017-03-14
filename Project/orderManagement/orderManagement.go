@@ -27,6 +27,7 @@ func AddOrder(orderChan, otherOrderChan chan []util.Order, floor, button int, el
 		fmt.Println("Received duplicate order")
 		orderChan <- orderSlice
 		otherOrderChan <- otherOrders
+		fmt.Println("ready to execute order")
 		return 0
 	} else {
 		orderSlice = prioritizeOrder(order, orderSlice, elevator)
