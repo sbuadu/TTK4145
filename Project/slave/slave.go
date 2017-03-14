@@ -7,7 +7,6 @@ import (
 	"../orderManagement"
 	"../util"
 	"fmt"
-	//"math/rand"
 	"os/exec"
 	"time"
 )
@@ -24,13 +23,12 @@ func SendOrder(order util.Order, sendOrders chan util.Order, orderChan, otherOrd
 	sendSuccess := false
 
 	for i := 0; i < 3; i++ {
-		time.Sleep(500 * time.Millisecond)
+		//time.Sleep(500 * time.Millisecond)
 		select {
 		case timestamp := <-callback:
 			if timestamp == order.AtTime {
 				sendSuccess = true
 			}
-		default:
 		}
 	}
 	fmt.Println("callback received: ", sendSuccess)
@@ -44,7 +42,7 @@ func SendOrder(order util.Order, sendOrders chan util.Order, orderChan, otherOrd
 	}
 }
 
-//must check if light is lit if another elevator is taking the order
+//TODO: Must check if light is lit if another elevator is taking the order
 func ListenRemoteOrders(listenForOrders chan util.Order, orderChan, otherOrderChan chan []util.Order) {
 
 	for {
@@ -96,7 +94,6 @@ func ListenLocalOrders(sendOrders chan util.Order, orderChan, otherOrderChan cha
 
 		if changed {
 			order := util.Order{thisElevator, util.Button{floor, button}, time.Now(), false}
-			//fmt.Println("sending order")
 			go SendOrder(order, sendOrders, orderChan, otherOrderChan, callback)
 			time.Sleep(700 * time.Millisecond)
 		}

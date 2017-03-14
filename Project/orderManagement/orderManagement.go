@@ -49,7 +49,6 @@ func RemoveOrder(order util.Order, orderSlice []util.Order) []util.Order {
 }
 
 func duplicateOrder(order util.Order, orderSlice []util.Order) bool {
-	//must add functionality to also check the other orders slice
 	for i := 0; i < len(orderSlice); i++ {
 		if orderSlice[i].FromButton.Floor == order.FromButton.Floor && orderSlice[i].FromButton.TypeOfButton == order.FromButton.TypeOfButton {
 			return true
