@@ -9,8 +9,7 @@ const Nfloors = 4
 const DoorOpenTime = 1000 * time.Millisecond
 const Nbuttons = 3
 
-var SlaveIPs = [Nslaves]string{"129.241.187.148", "129.241.187.144"}
-
+var SlaveIPs = [Nslaves]string{"129.241.187.156", "129.241.187.161"}
 
 type Direction int
 
@@ -21,11 +20,10 @@ const (
 )
 
 type Order struct {
-	ThisElevator	Elevator
-	FromButton	Button
-	AtTime		time.Time
-	Completed	bool
-
+	ThisElevator Elevator
+	FromButton   Button
+	AtTime       time.Time
+	Completed    bool
 }
 
 type Elevator struct {
@@ -36,4 +34,3 @@ type Elevator struct {
 type Button struct {
 	Floor, TypeOfButton int
 }
-

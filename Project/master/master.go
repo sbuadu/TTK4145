@@ -1,11 +1,11 @@
 package master
 
 import (
-    "../network/bcast"
-    "../orderManagement"
-    "../util"
-    "fmt"
-    "time"
+	"../network/bcast"
+	"../orderManagement"
+	"../util"
+	"fmt"
+	"time"
 )
 
 /*
@@ -18,9 +18,6 @@ This module works as a supervisor of the elevators and their operation.
 It is also resposible for assigning orders to individual elevators
 
 */
-
-
-
 
 func sendOrder(order util.Order, sendOrdersChannel chan util.Order) {
 	for i := 0; i < 3; i++ {
@@ -149,38 +146,38 @@ func MasterLoop(isBackup bool) {
 			}()
 
 			//Receiving changes in elevator status (dead or alive)
-            go func() {
-                slaveAlive = <-slaveAliveFromMaster
-            }()
+			go func() {
+				slaveAlive = <-slaveAliveFromMaster
+			}()
 
 			//listening for timer laps and taking over operation
-            go func() {
-                <-tmr.C
-                isBackup = false
-                firstTry = true
-                fmt.Println("Master is dead, dobby is a free elf!")
-                select {
-                case <-slavesChan:
-                default:
-                }
-                select {
-                case <-orderChan:
-                default:
-                }
-                select {
-                case <-slaveAliveChan:
-                default:
-                }
-                slavesChan <- slaves
-                orderChan <- orders
-                slaveAliveChan <- slaveAlive
+			go func() {
+				<-tmr.C
+				isBackup = false
+				firstTry = true
+				fmt.Println("Master is dead, dobby is a free elf!")
+				select {
+				case <-slavesChan:
+				default:
+				}
+				select {
+				case <-orderChan:
+				default:
+				}
+				select {
+				case <-slaveAliveChan:
+				default:
+				}
+				slavesChan <- slaves
+				orderChan <- orders
+				slaveAliveChan <- slaveAlive
 
-            }()
+			}()
 		}
 
-        if !isBackup && firstTry {
-            fmt.Println("I am the master")
-            firstTry = false
+		if !isBackup && firstTry {
+			fmt.Println("I am the master")
+			firstTry = false
 
 			if slaves[0].IP == "" { //if slaves arent initialized, initialize
 				for i := 0; i < util.Nslaves; i++ {
@@ -201,83 +198,82 @@ func MasterLoop(isBackup bool) {
 				timers[i] = time.NewTimer(20 * time.Second)
 			}
 
-
 			//Set up communication
-            go bcast.Transmitter("255.255.255.255", 20009, sendOrdersChannel, callbackChannel)
-            go bcast.Receiver(20008, orderChannel, statusChannel)
-            go bcast.Transmitter("255.255.255.255", 20011, orderBackupChan, slavesBackupChan, slaveAliveBackupChan)
+			go bcast.Transmitter("255.255.255.255", 20009, sendOrdersChannel, callbackChannel)
+			go bcast.Receiver(20008, orderChannel, statusChannel)
+			go bcast.Transmitter("255.255.255.255", 20011, orderBackupChan, slavesBackupChan, slaveAliveBackupChan)
 
-            go receiveOrder(orderChannel, sendOrdersChannel, orderChan, slaveAliveChan, slavesChan, callbackChannel)
+			go receiveOrder(orderChannel, sendOrdersChannel, orderChan, slaveAliveChan, slavesChan, callbackChannel)
 
 			//sending updates to backup
-            go func() {
-                for {
-                    orders = <-orderChan
-                    orderChan <- orders
-                    slaves = <-slavesChan
-                    slavesChan <- slaves
-                    select {
-                    case <-orderBackupChan:
-                    case <-slavesBackupChan:
-                    default:
-                    }
-                    orderBackupChan <- orders
-                    slavesBackupChan <- slaves
-                    fmt.Println("Sent update to backup")
-                    time.Sleep(1 * time.Second)
-                }
-            }()
+			go func() {
+				for {
+					orders = <-orderChan
+					orderChan <- orders
+					slaves = <-slavesChan
+					slavesChan <- slaves
+					select {
+					case <-orderBackupChan:
+					case <-slavesBackupChan:
+					default:
+					}
+					orderBackupChan <- orders
+					slavesBackupChan <- slaves
+					//fmt.Println("Sent update to backup")
+					time.Sleep(1 * time.Second)
+				}
+			}()
 
 			//Receiving status update from slave
-            go func() {
-                for {
-                    status := <-statusChannel
-                    for i := 0; i < util.Nslaves; i++ {
-                        if status.IP == util.SlaveIPs[i] {
-                            slaves = <-slavesChan
-                            slaves[i] = status
-                            slavesChan <- slaves
-                            fmt.Println(status.IP, " Present")
-                            timers[i].Reset(5 * time.Second)
-                        }
-                    }
-                }
-            }()
+			go func() {
+				for {
+					status := <-statusChannel
+					for i := 0; i < util.Nslaves; i++ {
+						if status.IP == util.SlaveIPs[i] {
+							slaves = <-slavesChan
+							slaves[i] = status
+							slavesChan <- slaves
+							fmt.Println(status.IP, " Present")
+							timers[i].Reset(5 * time.Second)
+						}
+					}
+				}
+			}()
 
 			//must test if works nomatter which order the slave IPs are listed
 			// checking for non-responsive slaves and working accordingly
-            go func() {
-                for {
-                    for j := 0; j < util.Nslaves; j++ {
-                        select {
-                        case <-timers[j].C:
-                            fmt.Println("Slave is dead. IP: ", util.SlaveIPs[j])
-                            slaveAlive = <-slaveAliveChan
-                            slaveAlive[j] = false
-                            slaveAliveChan <- slaveAlive
-                            slaveAliveBackupChan <- slaveAlive
-                            orders = <-orderChan
-                            orderChan <- orders
-                            fmt.Println("redistibuting dead slaves orders")
-                            for i := 0; i < len(orders[j]); i++ {
+			go func() {
+				for {
+					for j := 0; j < util.Nslaves; j++ {
+						select {
+						case <-timers[j].C:
+							fmt.Println("Slave is dead. IP: ", util.SlaveIPs[j])
+							slaveAlive = <-slaveAliveChan
+							slaveAlive[j] = false
+							slaveAliveChan <- slaveAlive
+							slaveAliveBackupChan <- slaveAlive
+							orders = <-orderChan
+							orderChan <- orders
+							fmt.Println("redistibuting dead slaves orders")
+							for i := 0; i < len(orders[j]); i++ {
 
-                                if !(orders[j][i].FromButton.TypeOfButton == 2) {
-                                    orders[j][i].Completed = true
-                                    go sendOrder(orders[j][i], sendOrdersChannel)
-                                    orders[j][i].Completed = false
+								if !(orders[j][i].FromButton.TypeOfButton == 2) {
+									orders[j][i].Completed = true
+									go sendOrder(orders[j][i], sendOrdersChannel)
+									orders[j][i].Completed = false
 
-                                    distributeOrder(orders[j][i], sendOrdersChannel, orderChan, slaveAliveChan, slavesChan)
+									distributeOrder(orders[j][i], sendOrdersChannel, orderChan, slaveAliveChan, slavesChan)
 
-                                }
-                            }
-                        default:
-                        }
-                    }
-                }
-            }()
+								}
+							}
+						default:
+						}
+					}
+				}
+			}()
 
-	    }
+		}
 		time.Sleep(1 * time.Second)
-    }
+	}
 
 }

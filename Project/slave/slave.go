@@ -25,12 +25,14 @@ func sendOrder(order util.Order, sendOrders chan util.Order, orderChan, otherOrd
 	sendSuccess := false
 
 	for i := 0; i < 3; i++ {
-		//time.Sleep(500 * time.Millisecond)
+		time.Sleep(500 * time.Millisecond)
 		select {
 		case timestamp := <-callback:
 			if timestamp == order.AtTime {
 				sendSuccess = true
+				return
 			}
+		default:
 		}
 	}
 	fmt.Println("callback received: ", sendSuccess)
@@ -223,11 +225,11 @@ func SlaveLoop(isBackup bool) {
 				firstTry = true
 				select {
 				case <-orderChan:
-                case <-otherOrderChan:
+				case <-otherOrderChan:
 				default:
 				}
 				orderChan <- orderSlice
-                otherOrderChan <- otherOrders
+				otherOrderChan <- otherOrders
 				fmt.Println("Taking over as slave")
 			}()
 
@@ -237,7 +239,7 @@ func SlaveLoop(isBackup bool) {
 					if isBackup {
 
 						thisElevator = <-stateChanBackup
-						fmt.Println("Elevator at floor", thisElevator.LastFloor)
+						//fmt.Println("Elevator at floor", thisElevator.LastFloor)
 						tmr.Reset(3 * time.Second)
 					} else {
 						return
@@ -258,14 +260,14 @@ func SlaveLoop(isBackup bool) {
 			go func() {
 				for isBackup {
 					if len(orderChanBackup) == cap(orderChanBackup) {
-                        tmpOrderSlice := <-orderChanBackup
-                        if len(tmpOrderSlice) !=0{
-                            if tmpOrderSlice[0].ThisElevator.IP == thisElevator.IP {
-                                orderSlice = tmpOrderSlice
-                            } else {
-                                otherOrders = tmpOrderSlice
-                            }
-                        }
+						tmpOrderSlice := <-orderChanBackup
+						if len(tmpOrderSlice) != 0 {
+							if tmpOrderSlice[0].ThisElevator.IP == thisElevator.IP {
+								orderSlice = tmpOrderSlice
+							} else {
+								otherOrders = tmpOrderSlice
+							}
+						}
 					}
 				}
 			}()
@@ -281,11 +283,11 @@ func SlaveLoop(isBackup bool) {
 			for i := 0; i < len(orderSlice); i++ {
 				driver.SetButtonLamp(orderSlice[i].FromButton.Floor, orderSlice[i].FromButton.TypeOfButton, 1)
 			}
-            otherOrders =<-otherOrderChan
+			otherOrders = <-otherOrderChan
 			for i := 0; i < len(otherOrders); i++ {
 				driver.SetButtonLamp(otherOrders[i].FromButton.Floor, otherOrders[i].FromButton.TypeOfButton, 1)
 			}
-            otherOrderChan <- otherOrders
+			otherOrderChan <- otherOrders
 
 			fmt.Println("I'm a slave now")
 
@@ -311,7 +313,7 @@ func SlaveLoop(isBackup bool) {
 					case <-stateChanMaster:
 					default:
 					}
-					fmt.Println("update backup")
+					//fmt.Println("update backup")
 					newStateChanBackup <- thisElevator
 					newOrderChanBackup <- orderSlice
 					stateChanMaster <- thisElevator
@@ -324,7 +326,7 @@ func SlaveLoop(isBackup bool) {
 				}
 			}()
 
-			//Checking for long-time incompleted orders 
+			//Checking for long-time incompleted orders
 			go func() {
 				for {
 
