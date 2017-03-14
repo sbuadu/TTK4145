@@ -96,10 +96,10 @@ func MasterLoop(isBackup bool) {
 	var orders [util.Nslaves][]util.Order
 
 	//channels for communication with slaves
-	orderChannel := make(chan util.Order, 1)
-	statusChannel := make(chan util.Elevator, 1)
-	sendOrdersChannel := make(chan util.Order, 1)
-	callbackChannel := make(chan time.Time, 1)
+	orderChannel := make(chan util.Order)
+	statusChannel := make(chan util.Elevator)
+	sendOrdersChannel := make(chan util.Order)
+	callbackChannel := make(chan time.Time)
 
 	//local process channels
 	slavesChan := make(chan [util.Nslaves]util.Elevator, 1)
@@ -147,7 +147,9 @@ func MasterLoop(isBackup bool) {
 
 			//Receiving changes in elevator status (dead or alive)
 			go func() {
-				slaveAlive = <-slaveAliveFromMaster
+				for {
+					slaveAlive = <-slaveAliveFromMaster
+				}
 			}()
 
 			//listening for timer laps and taking over operation
@@ -214,6 +216,9 @@ func MasterLoop(isBackup bool) {
 					slavesChan <- slaves
 					select {
 					case <-orderBackupChan:
+					default:
+					}
+					select {
 					case <-slavesBackupChan:
 					default:
 					}
