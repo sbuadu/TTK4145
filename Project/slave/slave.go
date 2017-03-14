@@ -228,6 +228,9 @@ func SlaveLoop(isBackup bool) {
 				firstTry = true
 				select {
 				case <-orderChan:
+				default:
+				}
+				select {
 				case <-otherOrderChan:
 				default:
 				}
@@ -278,11 +281,14 @@ func SlaveLoop(isBackup bool) {
 		}
 
 		if !isBackup && firstTry {
+
 			myIP, _ := localip.LocalIP()
 			firstTry = false
 			driver.InitElevator()
+
 			orderSlice := <-orderChan
-			orderChan <- orderSlice
+			fmt.Println("starting slave duties 1")
+
 			for i := 0; i < len(orderSlice); i++ {
 				driver.SetButtonLamp(orderSlice[i].FromButton.Floor, orderSlice[i].FromButton.TypeOfButton, 1)
 			}
@@ -290,6 +296,8 @@ func SlaveLoop(isBackup bool) {
 			for i := 0; i < len(otherOrders); i++ {
 				driver.SetButtonLamp(otherOrders[i].FromButton.Floor, otherOrders[i].FromButton.TypeOfButton, 1)
 			}
+			orderChan <- orderSlice
+			fmt.Println("starting slave duties 2")
 			otherOrderChan <- otherOrders
 
 			fmt.Println("I'm a slave now")
@@ -313,6 +321,9 @@ func SlaveLoop(isBackup bool) {
 				for {
 					select {
 					case <-newStateChanBackup:
+					default:
+					}
+					select {
 					case <-stateChanMaster:
 					default:
 					}
