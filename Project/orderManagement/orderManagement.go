@@ -24,15 +24,16 @@ func AddOrder(orderChan, otherOrderChan chan []util.Order, floor, button int, el
 	otherOrders := <-otherOrderChan
 
 	if duplicateOrder(order, orderSlice) || duplicateOrder(order, otherOrders) {
-		fmt.Println("Received duplicate order")
+
 		orderChan <- orderSlice
 		otherOrderChan <- otherOrders
-		fmt.Println("ready to execute order")
+		fmt.Println("ignored duplicate order")
 		return 0
 	} else {
 		orderSlice = prioritizeOrder(order, orderSlice, elevator)
 		orderChan <- orderSlice
 		otherOrderChan <- otherOrders
+		fmt.Println("Ready to execute order: ", order.FromButton.Floor)
 		return 1
 	}
 }

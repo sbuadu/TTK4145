@@ -62,8 +62,8 @@ func listenRemoteOrders(listenForOrders chan util.Order, orderChan, otherOrderCh
 		if order.ThisElevator.IP == thisElevator.IP { //the elevator should complete the order itself
 
 			if !order.Completed {
-				fmt.Println("reveived an order for me")
-				fmt.Println("doing order:", order.FromButton.Floor)
+				//fmt.Println("reveived an order for me")
+				//fmt.Println("doing order:", order.FromButton.Floor)
 				success := orderManagement.AddOrder(orderChan, otherOrderChan, order.FromButton.Floor, order.FromButton.TypeOfButton, order.ThisElevator, order.AtTime)
 				if success == 1 {
 					//fmt.Println("Trying to turn on light on floor", order.FromButton.Floor)
@@ -77,7 +77,7 @@ func listenRemoteOrders(listenForOrders chan util.Order, orderChan, otherOrderCh
 				otherOrders := <-otherOrderChan
 
 				if !order.Completed {
-					fmt.Println("reveived an order for another elevator")
+					//fmt.Println("reveived an order for another elevator")
 					fmt.Println("Other elevator doing order: ", order.FromButton.Floor)
 					otherOrders = append(otherOrders, order)
 					driver.SetButtonLamp(order.FromButton.Floor, order.FromButton.TypeOfButton, 1)
@@ -295,7 +295,6 @@ func SlaveLoop(isBackup bool) {
 			driver.InitElevator()
 
 			orderSlice := <-orderChan
-			fmt.Println("starting slave duties 1")
 
 			for i := 0; i < len(orderSlice); i++ {
 				driver.SetButtonLamp(orderSlice[i].FromButton.Floor, orderSlice[i].FromButton.TypeOfButton, 1)
@@ -305,7 +304,6 @@ func SlaveLoop(isBackup bool) {
 				driver.SetButtonLamp(otherOrders[i].FromButton.Floor, otherOrders[i].FromButton.TypeOfButton, 1)
 			}
 			orderChan <- orderSlice
-			fmt.Println("starting slave duties 2")
 			otherOrderChan <- otherOrders
 
 			fmt.Println("I'm a slave now")
@@ -315,7 +313,7 @@ func SlaveLoop(isBackup bool) {
 			newOrderChanBackup := make(chan []util.Order, 1)
 			stateChanMaster := make(chan util.Elevator, 1)
 
-			go bcast.Transmitter("255.255.255.255", 20009, sendOrders, stateChanMaster)
+			go bcast.Transmitter("255.255.255.255", 20008, sendOrders, stateChanMaster)
 			go bcast.Receiver(20009, listenForOrders, callback)
 			go bcast.Transmitter(myIP, 20010, newOrderChanBackup, newStateChanBackup)
 
