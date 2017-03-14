@@ -6,16 +6,23 @@ import (
 	"time"
 )
 
+/*
+ORDER MANAGEMENT MODULE
+
+This module contains functions for handeling orders and orderslices.
+It is a module supporting both the master and slave module.
+
+*/
+
 var orderSlice = make([]util.Order, 0) //slice of orders
 
-// 1 if success, 0 if duplicate order
 func AddOrder(orderChan, otherOrderChan chan []util.Order, floor, button int, elevator util.Elevator, atTime time.Time) int {
-	
+
 	order := util.Order{elevator, util.Button{floor, button}, atTime, false}
 	orderSlice := <-orderChan
-	otherOrders:= <-otherOrderChan
+	otherOrders := <-otherOrderChan
 
-	if duplicateOrder(order, orderSlice) || duplicateOrder(order, otherOrders){
+	if duplicateOrder(order, orderSlice) || duplicateOrder(order, otherOrders) {
 		orderChan <- orderSlice
 		otherOrderChan <- otherOrders
 		return 0
@@ -40,7 +47,6 @@ func RemoveOrder(order util.Order, orderSlice []util.Order) []util.Order {
 	return orderSlice
 }
 
-//returns true if the order already exists in the slice
 func duplicateOrder(order util.Order, orderSlice []util.Order) bool {
 	//must add functionality to also check the other orders slice
 	for i := 0; i < len(orderSlice); i++ {
@@ -91,7 +97,7 @@ func PrioritizeOrder(order util.Order, orderSlice []util.Order, elevator util.El
 func FindSuitableElevator(order util.Order, slaves []util.Elevator) util.Elevator {
 	elevIndex := 0
 	bestCost := 0
-	if order.FromButton.TypeOfButton == 2{
+	if order.FromButton.TypeOfButton == 2 {
 		return order.ThisElevator
 	}
 	for i := 0; i < len(slaves); i++ {
@@ -105,13 +111,12 @@ func FindSuitableElevator(order util.Order, slaves []util.Elevator) util.Elevato
 	return slaves[elevIndex]
 }
 
-
-//the elevator with the highest cost value should do the order 
+//the higher the cost the better the elevator is suited for the order
 func calculateCost(order util.Order, elevator util.Elevator) int {
 
 	var distance = int(math.Abs(float64(elevator.LastFloor) - float64(order.FromButton.Floor)))
 
-	if  (elevator.ElevDirection == 0 && order.FromButton.TypeOfButton == 0 && (elevator.LastFloor < order.FromButton.Floor)) || (elevator.ElevDirection == 1 && order.FromButton.TypeOfButton == 1 && elevator.LastFloor > order.FromButton.Floor) {
+	if (elevator.ElevDirection == 0 && order.FromButton.TypeOfButton == 0 && (elevator.LastFloor < order.FromButton.Floor)) || (elevator.ElevDirection == 1 && order.FromButton.TypeOfButton == 1 && elevator.LastFloor > order.FromButton.Floor) {
 		return 6 + distance*2
 	} else if (elevator.ElevDirection == 0 && order.FromButton.TypeOfButton == 1 && elevator.LastFloor < order.FromButton.Floor) || (elevator.ElevDirection == 1 && order.FromButton.TypeOfButton == 0 && elevator.LastFloor > order.FromButton.Floor) {
 		return 5 + distance*2

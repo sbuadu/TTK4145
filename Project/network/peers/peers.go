@@ -15,7 +15,7 @@ type PeerUpdate struct {
 }
 
 const interval = 15 * time.Millisecond
-const timeout = 50 * time.Millisecond
+const timeout = 500 * time.Millisecond
 
 func Transmitter(port int, id string, transmitEnable <-chan bool) {
 
@@ -75,7 +75,7 @@ func Receiver(port int, peerUpdateCh chan<- PeerUpdate) {
 		if updated {
 			p.Peers = make([]string, 0, len(lastSeen))
 
-			for k, _ := range lastSeen {
+			for k := range lastSeen {
 				p.Peers = append(p.Peers, k)
 			}
 
