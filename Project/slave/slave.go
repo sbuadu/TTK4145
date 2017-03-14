@@ -76,9 +76,9 @@ func listenRemoteOrders(listenForOrders chan util.Order, orderChan, otherOrderCh
 			} else { // another elevator will complete the order
 				fmt.Println("FROM OTHER ELEVATOR")
 				if order.FromButton.TypeOfButton != 2 {
-					fmt.Println("getting other orders slice")
+					fmt.Println("getting other orders slice 1")
 					otherOrders := <-otherOrderChan
-					fmt.Println("got other orders slice")
+					fmt.Println("got other orders slice 1")
 					if !order.Completed {
 						//fmt.Println("reveived an order for another elevator")
 						fmt.Println("Other elevator doing order: ", order.FromButton.Floor)
@@ -354,7 +354,9 @@ func SlaveLoop(isBackup bool) {
 			go func() {
 				for {
 
-					otherOrders = <-otherOrderChan
+					select{
+					case otherOrders = <-otherOrderChan:
+											fmt.Println("got other orders slice 2")
 					if len(otherOrders) > 0 {
 
 						for i := 0; i < len(otherOrders); i++ {
@@ -371,8 +373,11 @@ func SlaveLoop(isBackup bool) {
 						otherOrderChan <- otherOrders
 					}
 
-					time.Sleep(10 * time.Second)
 				}
+			default:
+			}
+
+					time.Sleep(10 * time.Second)
 			}()
 
 			spawnBackup := exec.Command("gnome-terminal", "-x", "sh", "-c", "go run /home/student/Documents/Group55/TTK4145/Project/main.go -startSlaveBackup")
