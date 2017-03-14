@@ -52,6 +52,7 @@ func sendOrder(order util.Order, sendOrders chan util.Order, orderChan, otherOrd
 }
 
 //TODO: Must check if light is lit if another elevator is taking the order
+//TODO: that an order received by one elevator is conducted by another if assigned to do so..
 func listenRemoteOrders(listenForOrders chan util.Order, orderChan, otherOrderChan chan []util.Order) {
 
 	for {
