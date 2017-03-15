@@ -40,8 +40,6 @@ func distributeOrder(order util.Order, sendOrdersChannel chan util.Order, orderC
 	}
 
 	order.ThisElevator = orderManagement.FindSuitableElevator(order, workingSlaves)
-	fmt.Print("This elevator: ", order.ThisElevator.IP)
-	fmt.Println("  should go to floor:", order.FromButton.Floor)
 	go sendOrder(order, sendOrdersChannel)
 
 	//adding the order to the right backup slice
@@ -256,12 +254,10 @@ func MasterLoop(isBackup bool) {
 							slaveAliveBackupChan <- slaveAlive
 							orders = <-orderChan
 							orderChan <- orders
-							fmt.Println("redistibuting dead slaves orders")
 							for i := 0; i < len(orders[j]); i++ {
 
 								if !(orders[j][i].FromButton.TypeOfButton == 2) {
 									orders[j][i].Completed = true
-									fmt.Println("Sending complete dead order")
 									go sendOrder(orders[j][i], sendOrdersChannel)
 									orders[j][i].Completed = false
 									time.Sleep(2 * time.Second)

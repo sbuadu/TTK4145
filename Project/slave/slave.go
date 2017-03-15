@@ -54,7 +54,7 @@ func listenRemoteOrders(listenForOrders chan util.Order, orderChan, otherOrderCh
 		select {
 
 		case order := <-listenForOrders:
-			fmt.Println("Got new order", order.FromButton.Floor)
+
 			if order.ThisElevator.IP == IP { //the elevator should complete the order itself
 
 				if !order.Completed {
@@ -65,17 +65,17 @@ func listenRemoteOrders(listenForOrders chan util.Order, orderChan, otherOrderCh
 				}
 
 			} else { // another elevator will complete the order
-				fmt.Println("FROM OTHER ELEVATOR")
+
 				if order.FromButton.TypeOfButton != 2 {
 					otherOrders := <-otherOrderChan
 
 					if !order.Completed {
-						fmt.Println("Other elevator doing order: ", order.FromButton.Floor)
+
 						otherOrders = append(otherOrders, order)
 						driver.SetButtonLamp(order.FromButton.Floor, order.FromButton.TypeOfButton, 1)
 
 					} else {
-						fmt.Println("Other elevator did order: ", order.FromButton.Floor)
+
 						otherOrders = orderManagement.RemoveOrder(order, otherOrders)
 						driver.SetButtonLamp(order.FromButton.Floor, order.FromButton.TypeOfButton, 0)
 
@@ -338,41 +338,41 @@ func SlaveLoop(isBackup bool) {
 			}()
 
 			//Checking for long-time incompleted orders
-			/*	go func() {
-					for {
+			go func() {
+				for {
 
-						select {
-						case otherOrders = <-otherOrderChan:
-							fmt.Println("got other orders slice 2")
-							if len(otherOrders) > 0 {
-								for i := 0; i < len(otherOrders); i++ {
-									otherOrders = <-otherOrderChan
-									if time.Since(otherOrders[i].AtTime) > time.Second*20 {
-										otherOrders[i].ThisElevator = thisElevator
-										otherOrders = orderManagement.RemoveOrder(otherOrders[i], otherOrders)
-										otherOrderChan <- otherOrders
-										fmt.Println("returned other orderSlice2")
-										orderManagement.AddOrder(orderChan, otherOrderChan, otherOrders[i].FromButton.Floor, otherOrders[i].FromButton.TypeOfButton, otherOrders[i].ThisElevator, otherOrders[i].AtTime)
-										i -= 1
-									} else {
-										otherOrderChan <- otherOrders
-										fmt.Println("returned other orderSlice2")
-									}
+					select {
+					case otherOrders = <-otherOrderChan:
+
+						if len(otherOrders) > 0 {
+							for i := 0; i < len(otherOrders); i++ {
+								otherOrders = <-otherOrderChan
+								if time.Since(otherOrders[i].AtTime) > time.Second*20 {
+									otherOrders[i].ThisElevator = thisElevator
+									otherOrders = orderManagement.RemoveOrder(otherOrders[i], otherOrders)
+									otherOrderChan <- otherOrders
+
+									orderManagement.AddOrder(orderChan, otherOrderChan, otherOrders[i].FromButton.Floor, otherOrders[i].FromButton.TypeOfButton, otherOrders[i].ThisElevator, otherOrders[i].AtTime)
+									i -= 1
+								} else {
+									otherOrderChan <- otherOrders
 
 								}
 
-							} else {
-								otherOrderChan <- otherOrders
-								fmt.Println("returned other orderSlice2")
 							}
 
-						default:
+						} else {
+							otherOrderChan <- otherOrders
+
 						}
 
-						time.Sleep(10 * time.Second)
+					default:
 					}
-				}()
-			*/
+
+					time.Sleep(10 * time.Second)
+				}
+			}()
+
 			spawnBackup := exec.Command("gnome-terminal", "-x", "sh", "-c", "go run /home/student/Documents/Group55/TTK4145/Project/main.go -startSlaveBackup")
 			spawnBackup.Start()
 
