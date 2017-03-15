@@ -55,7 +55,7 @@ func listenRemoteOrders(listenForOrders chan util.Order, orderChan, otherOrderCh
 
 		case order := <-listenForOrders:
 			fmt.Println("Got new order", order.FromButton.Floor)
-			if order.ThisElevator.IP == thisElevator.IP { //the elevator should complete the order itself
+			if order.ThisElevator.IP == IP { //the elevator should complete the order itself
 
 				if !order.Completed {
 					success := orderManagement.AddOrder(orderChan, otherOrderChan, order.FromButton.Floor, order.FromButton.TypeOfButton, order.ThisElevator, order.AtTime)
@@ -93,7 +93,7 @@ func listenRemoteOrders(listenForOrders chan util.Order, orderChan, otherOrderCh
 	}
 }
 
-func listenLocalOrders(sendOrders chan util.Order, orderChan, otherOrderChan chan []util.Order, callback chan time.Time) {
+func listenLocalOrders(sendOrders chan util.Order, orderChan, otherOrderChan chan []util.Order, callback chan time.Time, thisElevatorChan chan util.Elevator) {
 
 	var buttons [util.Nfloors][util.Nbuttons]int
 	for {
@@ -103,7 +103,9 @@ func listenLocalOrders(sendOrders chan util.Order, orderChan, otherOrderChan cha
 		changed, floor, button := CompareMatrix(buttons, recent)
 
 		if changed {
-			order := util.Order{thisElevator, util.Button{floor, button}, time.Now(), false}
+			thisElevatorTmp := <-thisElevatorChan
+			thisElevatorChan <- thisElevatorTmp
+			order := util.Order{thisElevatorTmp, util.Button{floor, button}, time.Now(), false}
 			go sendOrder(order, sendOrders, orderChan, otherOrderChan, callback)
 			time.Sleep(700 * time.Millisecond)
 		}
@@ -113,7 +115,7 @@ func listenLocalOrders(sendOrders chan util.Order, orderChan, otherOrderChan cha
 
 }
 
-func goToFloor(order util.Order, currentFloor int) {
+func goToFloor(order util.Order, currentFloor int, thisElevatorChan chan util.Elevator) {
 	orderFloor := order.FromButton.Floor
 	higher := currentFloor < orderFloor
 	var elevDir util.Direction
@@ -124,22 +126,28 @@ func goToFloor(order util.Order, currentFloor int) {
 	}
 	driver.SetDoorLamp(0)
 	driver.SteerElevator(elevDir)
-	thisElevator.ElevDirection = elevDir
+	thisElevatorTmp := <-thisElevatorChan
+	thisElevatorTmp.ElevDirection = elevDir
+	thisElevatorChan <- thisElevatorTmp
 	for currentFloor != orderFloor {
 		floor := driver.GetCurrentFloor()
 		if floor != -1 {
 			currentFloor = floor
-			thisElevator.LastFloor = currentFloor
+			thisElevatorTmp := <-thisElevatorChan
+			thisElevatorTmp.LastFloor = currentFloor
+			thisElevatorChan <- thisElevatorTmp
 			driver.SetFloorIndicator(currentFloor)
 		}
 	}
 	driver.SteerElevator(2)
-	thisElevator.ElevDirection = 2
+	thisElevatorTmp = <-thisElevatorChan
+	thisElevatorTmp.ElevDirection = 2
+	thisElevatorChan <- thisElevatorTmp
 	driver.SetButtonLamp(orderFloor, order.FromButton.TypeOfButton, 0)
 	driver.SetDoorLamp(1)
 }
 
-func executeOrder(sendOrders chan util.Order, orderChan, otherOrderChan chan []util.Order, callback chan time.Time) {
+func executeOrder(sendOrders chan util.Order, orderChan, otherOrderChan chan []util.Order, callback chan time.Time, thisElevatorChan chan util.Elevator) {
 
 	currentFloor := driver.GetCurrentFloor()
 	if currentFloor == -1 {
@@ -159,7 +167,7 @@ func executeOrder(sendOrders chan util.Order, orderChan, otherOrderChan chan []u
 				driver.SetDoorLamp(1)
 				driver.SetButtonLamp(currentOrder.FromButton.Floor, currentOrder.FromButton.TypeOfButton, 0)
 			} else {
-				goToFloor(currentOrder, currentFloor)
+				goToFloor(currentOrder, currentFloor, thisElevatorChan)
 			}
 			orderSlice := <-orderChan
 			orderSlice = orderManagement.RemoveOrder(currentOrder, orderSlice)
@@ -189,7 +197,6 @@ func CompareMatrix(newMatrix, oldMatrix [util.Nfloors][util.Nbuttons]int) (chang
 }
 
 var IP, _ = localip.LocalIP()
-var thisElevator = util.Elevator{IP, 0, 2}
 
 func SlaveLoop(isBackup bool) {
 
@@ -199,15 +206,18 @@ func SlaveLoop(isBackup bool) {
 	//local process channels
 	orderChan := make(chan []util.Order, 1)
 	otherOrderChan := make(chan []util.Order, 1)
+	thisElevatorChan := make(chan util.Elevator, 1)
 
 	//channels for communication with master
 	listenForOrders := make(chan util.Order, 1)
 	sendOrders := make(chan util.Order, 1)
 	callback := make(chan time.Time, 1)
 
+	var IP, _ = localip.LocalIP()
+	var thisElevator = util.Elevator{IP, 0, 2}
 	orderChan <- orderSlice
 	otherOrderChan <- otherOrders
-
+	thisElevatorChan <- thisElevator
 	firstTry := true
 
 	for {
@@ -220,7 +230,6 @@ func SlaveLoop(isBackup bool) {
 
 			go bcast.Receiver(20010, orderChanBackup, stateChanBackup)
 
-			fmt.Println("started timer")
 			tmr := time.NewTimer(5 * time.Second)
 
 			//listening for timer laps and taking over operation
@@ -238,6 +247,11 @@ func SlaveLoop(isBackup bool) {
 				case <-otherOrderChan:
 				default:
 				}
+				select {
+				case <-thisElevatorChan:
+				default:
+				}
+				thisElevatorChan <- thisElevator
 				orderChan <- orderSlice
 				otherOrderChan <- otherOrders
 				fmt.Println("Taking over as slave")
@@ -294,8 +308,8 @@ func SlaveLoop(isBackup bool) {
 			go bcast.Receiver(20009, listenForOrders, callback)
 			go bcast.Transmitter(myIP, 20010, newOrderChanBackup, newStateChanBackup)
 
-			go listenLocalOrders(sendOrders, orderChan, otherOrderChan, callback)
-			go executeOrder(sendOrders, orderChan, otherOrderChan, callback)
+			go listenLocalOrders(sendOrders, orderChan, otherOrderChan, callback, thisElevatorChan)
+			go executeOrder(sendOrders, orderChan, otherOrderChan, callback, thisElevatorChan)
 			go listenRemoteOrders(listenForOrders, orderChan, otherOrderChan)
 
 			//notifying I'm alive
@@ -310,10 +324,11 @@ func SlaveLoop(isBackup bool) {
 					case <-stateChanMaster:
 					default:
 					}
-
-					newStateChanBackup <- thisElevator
+					thisElevatorTmp := <-thisElevatorChan
+					thisElevatorChan <- thisElevatorTmp
+					newStateChanBackup <- thisElevatorTmp
 					newOrderChanBackup <- orderSlice
-					stateChanMaster <- thisElevator
+					stateChanMaster <- thisElevatorTmp
 					orderSlice = <-orderChan
 					orderChan <- orderSlice
 

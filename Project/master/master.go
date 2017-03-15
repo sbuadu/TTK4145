@@ -209,10 +209,10 @@ func MasterLoop(isBackup bool) {
 			//sending updates to backup
 			go func() {
 				for {
-					orders = <-orderChan
-					orderChan <- orders
-					slaves = <-slavesChan
-					slavesChan <- slaves
+					ordersTmp := <-orderChan
+					orderChan <- ordersTmp
+					slavesTmp := <-slavesChan
+					slavesChan <- slavesTmp
 					select {
 					case <-orderBackupChan:
 					default:
@@ -221,8 +221,8 @@ func MasterLoop(isBackup bool) {
 					case <-slavesBackupChan:
 					default:
 					}
-					orderBackupChan <- orders
-					slavesBackupChan <- slaves
+					orderBackupChan <- ordersTmp
+					slavesBackupChan <- slavesTmp
 					time.Sleep(1 * time.Second)
 				}
 			}()
@@ -233,9 +233,9 @@ func MasterLoop(isBackup bool) {
 					status := <-statusChannel
 					for i := 0; i < util.Nslaves; i++ {
 						if status.IP == util.SlaveIPs[i] {
-							slaves = <-slavesChan
-							slaves[i] = status
-							slavesChan <- slaves
+							slavesTmp := <-slavesChan
+							slavesTmp[i] = status
+							slavesChan <- slavesTmp
 							timers[i].Reset(5 * time.Second)
 						}
 					}
