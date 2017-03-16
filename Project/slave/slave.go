@@ -150,9 +150,13 @@ func goToFloor(order util.Order, currentFloor int, thisElevatorChan chan util.El
 func executeOrder(sendOrders chan util.Order, orderChan, otherOrderChan chan []util.Order, callback chan time.Time, thisElevatorChan chan util.Elevator) {
 
 	currentFloor := driver.GetCurrentFloor()
-	if currentFloor == -1 {
-		currentFloor = 0
+	thisElevatorTmp := <- thisElevatorChan
+	thisElevatorChan <- thisElevatorTmp
+	for currentFloor == -1 && thisElevatorTmp.ElevDirection == 2 {
+		driver.SteerElevator(1)
+		currentFloor = driver.GetCurrentFloor()
 	}
+	driver.SteerElevator(2)
 	for {
 		orderSlice := <-orderChan
 
@@ -275,6 +279,18 @@ func SlaveLoop(isBackup bool) {
 					} else {
 						return
 					}
+				}
+			}()
+
+			//Guard
+			go func() {
+				for isBackup {
+					thisElevatorTMP :=<-thisElevatorChan
+					if driver.GetCurrentFloor() == 3 && thisElevatorTMP.ElevDirection == 0 || driver.GetCurrentFloor() == 0 && thisElevatorTMP.ElevDirection == 1 {
+						driver.SteerElevator(2)
+					}
+					thisElevatorChan <- thisElevatorTMP
+					time.Sleep(200 * time.Second)
 				}
 			}()
 		}
