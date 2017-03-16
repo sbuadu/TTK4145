@@ -150,13 +150,9 @@ func goToFloor(order util.Order, currentFloor int, thisElevatorChan chan util.El
 func executeOrder(sendOrders chan util.Order, orderChan, otherOrderChan chan []util.Order, callback chan time.Time, thisElevatorChan chan util.Elevator) {
 
 	currentFloor := driver.GetCurrentFloor()
-	thisElevatorTmp := <- thisElevatorChan
-	thisElevatorChan <- thisElevatorTmp
-	for currentFloor == -1 && thisElevatorTmp.ElevDirection == 2 {
-		driver.SteerElevator(1)
-		currentFloor = driver.GetCurrentFloor()
+	for currentFloor == -1 {
+		currentFloor = 0
 	}
-	driver.SteerElevator(2)
 	for {
 		orderSlice := <-orderChan
 
